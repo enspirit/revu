@@ -37,6 +37,7 @@ const state = {
   filter: '',
   active: null,
   scope: null, // the one scope we are inside, or null for the list of them
+  stack: [], // the scopes we came through, oldest first — Esc walks back out
 }
 
 const dirOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/') + 1) : '')
@@ -61,9 +62,13 @@ const INLINE_LABEL = 24
 const itemRow = (item, counts) => {
   const at = item.line ? `${item.path}:${item.line}` : item.path
   const long = (item.label ?? '').length > INLINE_LABEL
+  // Inside a folder scope the folder is the title; repeating it on every row
+  // would push out the part that differs.
+  const within = state.scope?.within
+  const folder = dirOf(item.path)
   const top = make('div', { className: 'top' }, [
     make('span', { className: 'base', textContent: baseOf(item.path) + (item.line ? ':' + item.line : '') }),
-    make('span', { className: 'where', textContent: dirOf(item.path) }),
+    make('span', { className: 'where', textContent: within ? folder.slice(within.length + 1) : folder }),
   ])
   const n = counts.get(item.path)
   if (n) top.append(make('span', { className: 'n', textContent: `●${n}` }))
@@ -95,12 +100,19 @@ const drawList = () => {
   }
 
   if (state.scope) {
-    const back = make('div', { className: 'section back' }, [
-      make('span', { textContent: `‹ ${state.scope.title}` }),
-      make('span', { className: 'count', textContent: state.scope.items.length }),
-    ])
-    back.onclick = exitScope
-    list.append(back, make('div', { className: 'hint scope-hint', textContent: state.scope.hint }))
+    // Where Esc would take you, named: one step out of this scope is either the
+    // one you came through or the list of them all.
+    const whence = state.stack.at(-1)?.title ?? 'scopes'
+    const back = make('div', { className: 'back', textContent: `‹ ${whence}` })
+    back.onclick = leaveScope
+    list.append(
+      back,
+      make('div', { className: 'section' }, [
+        make('span', { textContent: state.scope.title }),
+        make('span', { className: 'count', textContent: state.scope.items.length }),
+      ]),
+      make('div', { className: 'hint scope-hint', textContent: state.scope.hint }),
+    )
     if (state.scope.error)
       list.append(make('p', { className: 'hint', textContent: state.scope.error }))
     if (!state.scope.items.length)
@@ -123,33 +135,58 @@ const drawList = () => {
   }
 }
 
+const DEPTH = 20
+
 const enterScope = async (id) => {
+  const from = state.scope
   const pending = state.map.scopes.find((s) => s.id === id)
   if (pending?.command) {
     state.scope = { ...pending, items: [], hint: `running ${pending.command}…` }
     drawList()
   }
   const scope = await api.scope(id)
-  if (scope.items) state.scope = scope
+  if (!scope.items) {
+    state.scope = from // a scope that answered nothing is not a place to be
+    return drawList()
+  }
+  // Entering from inside another scope stacks it; re-entering the one you are
+  // already in is not a move.
+  if (from && from.id !== scope.id) state.stack.push(from)
+  if (state.stack.length > DEPTH) state.stack.shift()
+  state.scope = scope
   drawList()
 }
 
-const exitScope = () => {
-  state.scope = null
+// One step out: back through the scopes you came by, then to the list of them.
+const leaveScope = () => {
+  state.scope = state.stack.pop() ?? null
   drawList()
 }
 
 /* ---------- file ---------- */
+
+// Each folder in the path above a file is a way into it: the question "what
+// else is in here?" comes up constantly while reading, and it is a navigation,
+// so it stacks like one.
+const crumbs = (path) => {
+  const box = make('span', { className: 'pdir' })
+  let prefix = ''
+  for (const part of path.split('/').slice(0, -1)) {
+    prefix += (prefix ? '/' : '') + part
+    const here = prefix
+    const crumb = make('span', { className: 'crumb', textContent: part + '/', title: `everything under ${here}/` })
+    crumb.onclick = () => enterScope('folder:' + here)
+    box.append(crumb)
+  }
+  return box
+}
 
 const drawFile = () => {
   const content = $('#content')
   content.replaceChildren()
   content.classList.remove('empty')
   $('#path').title = state.file.path
-  $('#path').replaceChildren(
-    make('span', { className: 'pdir', textContent: dirOf(state.file.path) }),
-    make('span', { className: 'pbase', textContent: baseOf(state.file.path) }),
-  )
+  $('#path').replaceChildren(crumbs(state.file.path), make('span', { className: 'pbase', textContent: baseOf(state.file.path) }))
   $('#toggle').hidden = !state.file.html
   $('#toggle').textContent = state.view === 'prose' ? 'source ( r )' : 'rendered ( r )'
 
@@ -461,7 +498,8 @@ const SHORTCUTS = {
   e: () => sheet(),
   d: () => cycleTheme(),
   '/': () => $('#search').focus(),
-  Escape: () => exitScope(),
+  Escape: () => leaveScope(),
+  Backspace: () => leaveScope(),
 }
 
 document.addEventListener('keydown', (ev) => {

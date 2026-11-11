@@ -78,6 +78,20 @@ export const catalogue = (project, git = { commits: () => new Map(), changes: ()
     })
     .filter(Boolean)
 
+// Reached by clicking a folder in the path above a file, never listed: there
+// are as many of these as there are folders, and they are a way of moving
+// rather than a place to look. Everything underneath, not just the children —
+// one list, no tree.
+export const FOLDER = 'folder:'
+
+export const folderScope = (files, prefix) => ({
+  id: FOLDER + prefix,
+  title: `In ${prefix}/`,
+  hint: 'everything under this folder',
+  within: prefix, // the rows drop it from their folder column: it is the title
+  items: files.filter((f) => f.path.startsWith(prefix + '/')).map((f) => ({ path: f.path, label: '' })),
+})
+
 // Rows carry the file's length wherever they appear, so "how much is there to
 // read" never needs a second question.
 export const sized = (items, corpus) =>

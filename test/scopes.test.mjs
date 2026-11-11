@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { merge } from '../src/config.mjs'
 import { parseStatus } from '../src/project.mjs'
 import { parseLocations } from '../src/run.mjs'
-import { catalogue, headers, sized } from '../src/scopes.mjs'
+import { catalogue, folderScope, headers, sized } from '../src/scopes.mjs'
 
 const project = (files, config = {}) => {
   const corpus = new Map(files.map(([path, kind, n]) => [path, { kind, lines: Array(n).fill('x') }]))
@@ -116,4 +116,22 @@ test('git status is read for what changed and how', () => {
     { path: 'src/b.ts', label: 'renamed' },
     { path: 'src/c.ts', label: 'added' },
   ])
+})
+
+test('a folder is a scope reached by its name, holding everything under it', () => {
+  const files = [
+    { path: 'src/a.ts' },
+    { path: 'src/deep/b.ts' },
+    { path: 'src-other/c.ts' },
+    { path: 'doc/d.md' },
+  ]
+  const scope = folderScope(files, 'src')
+  assert.equal(scope.id, 'folder:src')
+  assert.equal(scope.title, 'In src/')
+  assert.equal(scope.within, 'src', 'the rows drop it from their folder column')
+  assert.deepEqual(
+    scope.items.map((i) => i.path),
+    ['src/a.ts', 'src/deep/b.ts'],
+    'a sibling whose name merely starts the same is not inside it',
+  )
 })

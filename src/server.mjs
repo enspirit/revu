@@ -11,7 +11,7 @@ import * as notes from './notes.mjs'
 import { highlight } from './highlight.mjs'
 import { gitFacts, openProject } from './project.mjs'
 import { parseLocations, runCommand } from './run.mjs'
-import { catalogue, headers, sized } from './scopes.mjs'
+import { catalogue, FOLDER, folderScope, headers, sized } from './scopes.mjs'
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..', 'web')
 const TYPES = { html: 'text/html', js: 'text/javascript', css: 'text/css' }
@@ -65,6 +65,10 @@ export const serve = ({ root, port, host = '127.0.0.1' }) => {
   })
 
   const scope = async (id) => {
+    if (id.startsWith(FOLDER)) {
+      const folder = folderScope(project.files, id.slice(FOLDER.length))
+      return folder.items.length ? { ...folder, items: sized(folder.items, project.corpus) } : null
+    }
     const found = scopes.find((s) => s.id === id)
     if (!found) return null
     if (!found.command) return { ...found, items: sized(found.items, project.corpus) }

@@ -68,10 +68,17 @@ revu init ~/code/some-project    # write .revu.yml — the only file revu ever w
 ## The three panes
 
 **Left, the map — a list of scopes.** A scope is a named set of places to look.
-You enter one, work inside it, and leave it (<kbd>Esc</kbd>); you are in exactly
-one, or in none. There is no file tree, because a tree of 600 files is not a
-question anybody has — the search box reaches a file whose name you know, and a
-scope reaches the ones you do not.
+You enter one, work inside it, and leave it; you are in exactly one, or in none.
+There is no file tree, because a tree of 600 files is not a question anybody
+has — the search box reaches a file whose name you know, and a scope reaches the
+ones you do not.
+
+Scopes stack. Every folder in the path above the open file is a door — click
+`api/` and you are in a scope of everything under it, with the one you came
+from kept underneath. <kbd>Esc</kbd> (or <kbd>⌫</kbd>) walks back out one step
+at a time, and the top row always names where that step goes. The file you are
+reading stays open the whole time: moving around the map never disturbs the
+page.
 
 Every row is the same four things: **what it is called** (with `:line` when the
 scope points at one), **where it lives**, **how long it is**, and whatever this

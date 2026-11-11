@@ -194,9 +194,18 @@ textarea {
   color: var(--dim);
   padding: 0.5rem 0.8rem 0.1rem;
 }
-.section.back {
-  cursor: pointer;
+/* The way out, named after where it goes. */
+.back {
+  padding: 0.5rem 0.8rem 0;
+  font-size: 0.75rem;
   color: var(--accent);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.back:hover {
+  text-decoration: underline;
 }
 .scope-hint {
   padding: 0 0.8rem 0.45rem;
@@ -294,6 +303,14 @@ a.file .n {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Every folder above a file is a door into it. */
+.path .crumb {
+  cursor: pointer;
+}
+.path .crumb:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }
 .path .pbase {
   white-space: nowrap;
