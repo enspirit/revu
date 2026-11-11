@@ -8,7 +8,7 @@ test('the first run says the two things a newcomer cannot guess', () => {
   assert.match(text, /revu 1\.0\.0/)
   assert.match(text, /\/home\/you\/\.local\/state\/revu/, 'where the remarks go')
   assert.match(text, /revu init \./, 'what to do next')
-  assert.match(text, /revu\.enspirit\.be/)
+  assert.match(text, /revu\.enspirit\.dev/)
 })
 
 test('it is plain text unless a terminal is listening', () => {

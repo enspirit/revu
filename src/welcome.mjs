@@ -18,5 +18,5 @@ export const welcome = (version, dir, tty = false) =>
   ${bold('revu init .', tty)} writes a ${bold('.revu.yml', tty)} — the only file revu ever puts in a
   project — where you choose which scopes it offers, and on what numbers.
 
-  ${dim('Why this exists: https://revu.enspirit.be', tty)}
+  ${dim('Why this exists: https://revu.enspirit.dev', tty)}
 `
