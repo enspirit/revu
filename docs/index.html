@@ -178,16 +178,6 @@
         font-size: 0.9rem;
         color: var(--dim);
       }
-      .callout {
-        background: var(--mark);
-        border: 1px solid var(--line);
-        border-radius: 0.4rem;
-        padding: 1rem 1.2rem;
-        margin: 2rem 0;
-      }
-      .callout p:last-child {
-        margin-bottom: 0;
-      }
       footer {
         margin-top: 4rem;
         padding-top: 1.5rem;
@@ -284,7 +274,20 @@
         font-size: 1.35rem;
       }
       .cta p {
-        margin: 0 0 1rem;
+        margin: 0 0 1.2rem;
+      }
+      /* The box breathes on the inside and stops at its own edge: the last
+         child's margin would otherwise pad the bottom twice. */
+      .cta > :last-child {
+        margin-bottom: 0;
+      }
+      /* Buttons in a row of their own, so they keep their distance from the
+         install line and wrap evenly on a phone. */
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-bottom: 1.2rem;
       }
       .button {
         display: inline-block;
@@ -302,11 +305,10 @@
         background: none;
         color: var(--accent);
         border: 1px solid var(--accent);
-        margin-left: 0.5rem;
       }
       /* The one line most readers came for. */
       .install {
-        margin: 1.1rem 0 0;
+        margin: 0;
       }
       .install code {
         display: inline-block;
@@ -393,8 +395,10 @@
           We read agent-written and vibe-coded codebases for a living, and leave you with the
           harness as well as the report. Revu is the tool we do it with — free, open source, yours.
         </p>
-        <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
-        <a class="button ghost" href="https://github.com/enspirit/revu">Revu on GitHub</a>
+        <div class="actions">
+          <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
+          <a class="button ghost" href="https://github.com/enspirit/revu">Revu on GitHub</a>
+        </div>
         <p class="install"><code>npm install -g @enspirit/revu</code></p>
       </div>
 
@@ -598,8 +602,10 @@
           and deployment harnesses around agent-built codebases, and hand back the harness as well
           as the report — not just an opinion. Tell us what you have inherited.
         </p>
-        <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
-        <a class="button ghost" href="https://github.com/sponsors/enspirit">Sponsor the work</a>
+        <div class="actions">
+          <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
+          <a class="button ghost" href="https://github.com/sponsors/enspirit">Sponsor the work</a>
+        </div>
       </div>
 
       <p>
