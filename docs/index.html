@@ -157,6 +157,38 @@
         margin-top: 0.5rem;
         text-align: center;
       }
+      /* The list of scopes: a name you could say out loud, and why you would
+         open it. Two columns, no borders — it is a glossary, not a grid. */
+      .scopes {
+        border-collapse: collapse;
+        margin: 1.2rem 0 1.6rem;
+        width: 100%;
+      }
+      .scopes td {
+        padding: 0.35rem 0.6rem 0.35rem 0;
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+      }
+      .scopes td:first-child {
+        font-weight: 600;
+        white-space: nowrap;
+        width: 1%;
+      }
+      .scopes td:last-child {
+        color: var(--dim);
+        font-size: 0.95rem;
+      }
+      @media (max-width: 34rem) {
+        .scopes td {
+          display: block;
+          border-bottom: 0;
+          padding-bottom: 0;
+        }
+        .scopes td:last-child {
+          padding-bottom: 0.6rem;
+          border-bottom: 1px solid var(--line);
+        }
+      }
       .cards {
         display: grid;
         gap: 0.8rem;
@@ -405,36 +437,32 @@
       <h2>The job changed under us</h2>
 
       <p>
-        A year ago, the work was writing software. Today a growing part of it is answering a harder
+        A year ago the work was writing software. Today a growing part of it is answering a harder
         question about software somebody else's agent already wrote: <em>is this safe to run?</em>
       </p>
 
       <p>
         The projects arriving at our door have a shape in common. A founder with no engineering
         background has vibe-coded a product that demos beautifully and now holds real customer data.
-        A team has shipped in three weeks what would have taken six months, and cannot say which
-        parts are load-bearing. A codebase has a hundred tests, all green, none of which fail when
-        you break the business rule on purpose. In every case we are handed a repository
-        <strong>nobody on our side wrote</strong>, that no single person ever held in their head,
-        delivered complete rather than in increments.
+        A team has shipped in three weeks what would have taken six months and cannot say which
+        parts are load-bearing. A codebase has a hundred green tests, none of which fail when you
+        break the business rule on purpose. Every time, we are handed a repository
+        <strong>nobody on our side wrote</strong>, that no one person ever held in their head.
       </p>
 
       <p>
-        This is the new job of the professional software engineer, and it is not going away: reading
-        code you did not write and did not watch being written, well enough to put your name on it —
-        and putting a harness around it so that the next thousand agent-written lines cannot quietly
-        break what matters.
+        That is the new job, and it is not going away: read code you did not write and did not watch
+        being written, well enough to put your name on it — then leave a harness behind, so the next
+        thousand agent-written lines cannot quietly break what matters.
       </p>
 
       <h2>Review by diff is dead</h2>
 
       <p>
-        Code review as we have practised it for fifteen years rests on three assumptions: the change
-        is <em>small</em>, the author is a <em>colleague</em> who can explain their reasoning, and
-        both of you know the <em>base</em> it applies to. Pull request, line comments, approve.
+        Code review as practised for fifteen years rests on three assumptions: the change is
+        <em>small</em>, the author is a <em>colleague</em> who can explain their reasoning, and both
+        of you know the <em>base</em>. All three are now false.
       </p>
-
-      <p>All three are now false.</p>
 
       <ul>
         <li>
@@ -443,88 +471,121 @@
         </li>
         <li>
           <strong>The author cannot be questioned.</strong> An agent will explain anything you like,
-          fluently, after the fact. Its explanation is generated, not remembered — so the usual
-          review conversation, where understanding is repaired by asking, does not converge.
+          fluently, after the fact. The explanation is generated, not remembered — so asking does
+          not converge.
         </li>
         <li>
-          <strong>You do not know the base.</strong> The thing you most need is not "what changed"
-          but "what <em>is</em> here, and where should I look first".
+          <strong>You do not know the base.</strong> What you need is not "what changed" but "what
+          <em>is</em> here, and where do I look first".
         </li>
       </ul>
-
-      <p>
-        When the unit of review stops being a change and becomes a codebase, the diff is simply the
-        wrong lens.
-      </p>
 
       <h2>"The agents will review it" is a dead end</h2>
 
       <p>
-        The tempting answer is to point a second agent at the first one's output. We tried it,
+        The tempting answer is to point a second agent at the first one's output. We tried,
         repeatedly. It fails for reasons that have nothing to do with how good the models get.
       </p>
 
       <ul>
         <li>
-          <strong>A generated review is more text to read.</strong> You end up reviewing the review —
-          and that text is optimised for sounding thorough, not for being read. The pile grows; the
-          understanding does not.
+          <strong>A generated review is more text to read.</strong> You end up reviewing the review,
+          and that text is optimised for sounding thorough. The pile grows; the understanding does
+          not.
         </li>
         <li>
-          <strong>Accountability cannot be delegated.</strong> When a client asks whether their
-          system can be put in front of customers, the deliverable is a signature, not a
-          probability. Signing something nobody has read is the <em>problem</em> we are hired to
-          fix; it cannot also be the method.
+          <strong>Accountability cannot be delegated.</strong> Asked whether a system can go in
+          front of customers, you owe a signature, not a probability. Signing what nobody has read
+          is the problem we are hired to fix — it cannot also be the method.
         </li>
         <li>
           <strong>The decisive judgements are not in the repository.</strong> Whether the code does
-          the right thing for the business, whether a risk is acceptable, whether this is the system
-          the client actually needs — none of that can be read off the source, by anybody, at any
-          model size.
+          the right thing for the business, whether a risk is acceptable, whether this is even the
+          system the client needs — none of it can be read off the source, at any model size.
         </li>
       </ul>
 
       <p>
-        So humans will look at the code. That is settled. The open question is <em>with what</em> —
-        and the honest answer, in our shop, was: with nothing built for this. We were reading
-        agent-written repositories in an editor, keeping the map in our heads, and writing feedback
-        in a chat window that lost it the next morning.
+        So humans will look at the code. The open question is <em>with what</em> — and our honest
+        answer was: nothing built for this. We were reading agent-written repositories in an editor,
+        keeping the map in our heads, and writing feedback into a chat window that lost it by
+        morning.
       </p>
 
       <blockquote>
-        AI writes, humans validate — but that only holds while validating stays
-        <strong>cheaper</strong> than writing. Every tool we build is measured against that
-        inequality.
+        AI writes, humans validate — but only while validating stays <strong>cheaper</strong> than
+        writing. Every tool we build is measured against that inequality.
       </blockquote>
 
       <p>
-        Agents remain excellent at the part they are actually good at: <em>pointing</em>. Run the
-        linter, the type checker, the grep for a rule your project decided on. That is an
-        instrument, not a judge — and it is exactly how Revu uses them.
+        Agents stay excellent at the part they are genuinely good at: <em>pointing</em>. Run the
+        linter, the type checker, the grep for a rule your project decided on. An instrument, not a
+        judge — which is exactly how Revu uses them.
       </p>
 
       <h2>So we built Revu</h2>
 
       <p>
-        <strong>Revu is a reading surface for code you did not write.</strong> You point it at a
-        repository; it opens in your browser; you read, you say things about specific lines, and it
-        hands you back <strong>one markdown text</strong> to give to whoever writes the next change —
-        a colleague, or the agent.
+        <strong>A reading surface for code you did not write.</strong> Point it at a repository, read
+        it in your browser, say things about specific lines, and get back <strong>one markdown
+        text</strong> for whoever writes the next change — a colleague, or the agent.
       </p>
 
       <h3>Scopes, not a file tree</h3>
       <p>
         A tree of six hundred files is not a question anybody has. The left panel is a list of
-        <em>scopes</em> — named sets of places to look, entered one at a time, stacking as you go:
-        what changed and was never committed, where the agent has been churning this week, the
-        longest sources, the files no test so much as names, documents nothing links to, decisions
-        recorded and then cited nowhere. Each one is a cheap, honest signal. None of them claims a
-        defect; they claim a place to look.
+        <em>scopes</em>: sets of files that share a property, entered one at a time, stacking as you
+        go. Pick one, read what is in it, say things about the lines that deserve it.
       </p>
+
+      <table class="scopes">
+        <tr>
+          <td>The last commit</td>
+          <td>what the agent just did, before you lose track of it</td>
+        </tr>
+        <tr>
+          <td>On this branch</td>
+          <td>everything it has that <code>main</code> does not</td>
+        </tr>
+        <tr>
+          <td>Changed, not committed</td>
+          <td>the working tree, right now</td>
+        </tr>
+        <tr>
+          <td>Longest documents</td>
+          <td>the verbose markdown an agent turns out by the bucket</td>
+        </tr>
+        <tr>
+          <td>Largest sources</td>
+          <td>files that have grown past reading</td>
+        </tr>
+        <tr>
+          <td>No test names it</td>
+          <td>where the green suite is not actually looking</td>
+        </tr>
+        <tr>
+          <td>Named nowhere else</td>
+          <td>written, then forgotten: nothing so much as mentions them</td>
+        </tr>
+        <tr>
+          <td>Unlinked documents · Uncited decisions</td>
+          <td>prose and records nothing points at</td>
+        </tr>
+        <tr>
+          <td>Broken links · Left for later</td>
+          <td>drift, and what was postponed</td>
+        </tr>
+        <tr>
+          <td>Moving most</td>
+          <td>where the churn has been, these N days</td>
+        </tr>
+      </table>
+
       <p>
-        You declare which scopes your project offers, and on what numbers, in a small
-        <code>.revu.yml</code> — because what counts as a large file is a question about your
-        project, not about our tool. And anything that prints a location becomes a scope of its own:
+        Each one is a cheap, honest signal. None of them claims a defect; they claim a place to
+        look. You declare which your project offers, and on what numbers, in a small
+        <code>.revu.yml</code> — what counts as a large file is a question about your project, not
+        about our tool. And anything that prints a location becomes a scope of its own:
       </p>
       <pre><code>scopes:
   - use: largest
@@ -543,26 +604,24 @@
 
       <h3>What it refuses to do</h3>
       <p>
-        It <strong>never writes to the project under review</strong> — your remarks live outside it,
-        so a review can span days without touching a branch. And there is
-        <strong>no AI inside Revu</strong>. That is deliberate. The judgement is the product; the
-        tool's job is to make reading cheap enough that the judgement actually happens.
+        It <strong>never writes to the project under review</strong> — remarks live outside it, so a
+        review can span days without touching a branch. And there is
+        <strong>no AI inside Revu</strong>, deliberately. The judgement is the product; the tool's
+        job is to make reading cheap enough that the judgement actually happens.
       </p>
 
-      <p>
-        About two thousand lines, three dependencies, no build step. It is a tool, not a platform.
-      </p>
+      <p>About two thousand lines, three dependencies, no build step. A tool, not a platform.</p>
 
       <h2>Where it comes from</h2>
 
       <p>
-        We build with agents every day, at scale, and we have the scar tissue.
+        We build with agents every day, and we have the scar tissue.
         <a href="https://ofi.dev">o=f(i)</a> — a formula as a service, where a small program answers
         at a URL — is largely agent-written, specification first, and reviewing it is what made the
         gap obvious. <a href="https://klaro.cards">Klaro Cards</a>, our project-management product,
-        is where the same practices meet a codebase with years of history and real customers behind
-        it. Revu was built in a day, out of that frustration, and the first thing we did was point it
-        at itself — which is how the remark in the screenshot above was written.
+        is where the same practices meet years of history and real customers. Revu was built in a
+        day out of that frustration, and the first thing we did was point it at itself — which is
+        how the remark in the screenshot was written.
       </p>
 
       <div class="cards">

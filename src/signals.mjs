@@ -92,9 +92,9 @@ export const uncitedDecisions = (corpus) => {
 // Size is the one complexity measure that needs no parser and never lies about
 // the cost of reading the file. Every row in the panel already shows its line
 // count, so this signal is an ordering, not a label.
-export const bigFiles = (corpus, { min = 250, top = 15 } = {}) =>
+export const bigFiles = (corpus, { min = 250, top = 15, kind = 'code' } = {}) =>
   [...corpus]
-    .filter(([, f]) => f.kind === 'code')
+    .filter(([, f]) => kind === 'any' || f.kind === kind || (kind === 'doc' && f.kind === 'decision'))
     .map(([path, f]) => ({ path, n: f.lines.length }))
     .filter(({ n }) => n >= min)
     .sort((a, b) => b.n - a.n)
@@ -125,6 +125,46 @@ export const untested = (corpus, { min = 80, top = 15 } = {}) => {
     .sort((a, b) => b.n - a.n)
     .slice(0, top)
     .map(({ path }) => ({ path, label: 'no test names it' }))
+}
+
+const WORD = /[A-Za-z0-9_-]+/g
+const ENTRY = new Set(['index', 'main', 'mod', 'init', 'readme'])
+// `.revu.yml` is referred to as "revu": a leading dot is part of the filename,
+// never part of how anything names it.
+const stem = (path) =>
+  path
+    .slice(path.lastIndexOf('/') + 1)
+    .replace(/^\./, '')
+    .replace(/\.\w+$/, '')
+    .toLowerCase()
+
+// A file nothing else names — dead weight, or a thing the agent wrote and then
+// forgot it had. One pass over every word in the project records who said it
+// first and whether anybody else did, which answers the question for every
+// file at once. Conventional entry points are skipped: nothing imports an
+// `index` by name, and that is not a finding.
+export const unreferenced = (corpus, { min = 1, top = 20 } = {}) => {
+  const said = new Map()
+  for (const [path, file] of corpus)
+    for (const line of file.lines)
+      for (const [word] of line.matchAll(WORD)) {
+        const token = word.toLowerCase()
+        const heard = said.get(token)
+        if (!heard) said.set(token, { first: path, elsewhere: false })
+        else if (heard.first !== path) heard.elsewhere = true
+      }
+
+  const items = []
+  for (const [path, file] of corpus) {
+    const base = stem(path)
+    // A test is found by a glob, not by name: nothing referring to it is the
+    // normal case, not a finding.
+    if (ENTRY.has(base) || TEST_PATH.test(path) || file.lines.length < min) continue
+    const heard = said.get(base)
+    if (!heard || (heard.first === path && !heard.elsewhere))
+      items.push({ path, label: 'named nowhere else' })
+  }
+  return items.slice(0, top)
 }
 
 export const churn = (counts, { top = 15 } = {}) =>

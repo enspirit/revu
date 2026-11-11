@@ -12,6 +12,7 @@ import {
   orphanDocs,
   todos,
   uncitedDecisions,
+  unreferenced,
   untested,
 } from './signals.mjs'
 
@@ -37,21 +38,34 @@ const BUILT_IN = {
     items: (p) => paths(p.config.reading.filter((path) => p.corpus.has(path))),
   },
   changed: { row: STATE,
-    title: (par) => (par.against ? `Changed against ${par.against}` : 'Changed, not committed'),
-    hint: (par) => (par.against ? 'this branch, as a whole' : 'the working tree against HEAD'),
+    title: (par) => (par.against ? 'On this branch' : 'Changed, not committed'),
+    hint: (par) => (par.against ? `everything this branch has that ${par.against} does not` : 'the working tree against HEAD'),
     items: (p, par, git) => git.changes(par.against),
   },
   decisions: { row: LENGTH, title: 'Decisions', hint: 'the record, in order', items: (p) => of(p.corpus, 'decision') },
   documents: { row: LENGTH, title: 'Documents', hint: 'the prose', items: (p) => of(p.corpus, 'doc') },
+  commit: { row: LENGTH,
+    title: (par) => (par.ref && par.ref !== 'HEAD' ? `In ${par.ref}` : 'The last commit'),
+    hint: 'what that one commit touched',
+    items: (p, par, git) => git.commit(par.ref ?? 'HEAD'),
+  },
   churn: { row: STATE,
     title: 'Moving most',
     hint: (par) => `commits in the last ${par.days ?? 30} days`,
     items: (p, par, git) => churn(git.commits(par.days ?? 30), par),
   },
   largest: { row: LENGTH,
-    title: 'Largest sources',
-    hint: (par) => `${par.min ?? 250} lines or more, longest first`,
+    // The same measure answers two questions: which sources have grown too
+    // long, and which documents an agent padded out.
+    title: (par) => (par.kind === 'doc' ? 'Longest documents' : 'Largest sources'),
+    hint: (par) =>
+      `${par.min ?? 250} lines or more, longest first` + (par.kind === 'doc' ? ', prose only' : ''),
     items: (p, par) => bigFiles(p.corpus, par),
+  },
+  unreferenced: { row: LENGTH,
+    title: 'Named nowhere else',
+    hint: 'no other file so much as mentions them',
+    items: (p, par) => unreferenced(p.corpus, par),
   },
   untested: { row: LENGTH,
     title: 'No test names it',
@@ -67,7 +81,9 @@ const BUILT_IN = {
 
 const say = (value, params) => (typeof value === 'function' ? value(params) : value)
 
-export const catalogue = (project, git = { commits: () => new Map(), changes: () => [] }) =>
+const NO_GIT = { commits: () => new Map(), changes: () => [], commit: () => [] }
+
+export const catalogue = (project, git = NO_GIT) =>
   project.config.scopes
     .map((declared) => {
       if (declared.command)

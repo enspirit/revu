@@ -51,15 +51,30 @@ export const changedFiles = (root, against) => {
   }
 }
 
+// What one commit touched. `HEAD` is the usual question — "what did the agent
+// just do?" — but any ref answers.
+export const commitFiles = (root, ref = 'HEAD') => {
+  try {
+    return git(root, ['show', '--name-only', '--pretty=format:', ref])
+      .split('\n')
+      .filter(Boolean)
+      .map((path) => ({ path, label: '' }))
+  } catch {
+    return []
+  }
+}
+
 // The git questions a scope may ask, answered once each. Injected rather than
 // imported so the catalogue stays a function of its inputs.
 export const gitFacts = (root) => {
+  const once = (cache, key, answer) => (cache.has(key) ? cache : cache.set(key, answer())).get(key)
   const log = new Map()
   const diff = new Map()
+  const show = new Map()
   return {
-    commits: (days) => (log.has(days) ? log : log.set(days, commitCounts(root, days))).get(days),
-    changes: (against = '') =>
-      (diff.has(against) ? diff : diff.set(against, changedFiles(root, against || undefined))).get(against),
+    commits: (days) => once(log, days, () => commitCounts(root, days)),
+    changes: (against = '') => once(diff, against, () => changedFiles(root, against || undefined)),
+    commit: (ref = 'HEAD') => once(show, ref, () => commitFiles(root, ref)),
   }
 }
 

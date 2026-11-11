@@ -18,12 +18,18 @@ exclude: []
 scopes:
   - use: reading
   - use: changed
+  - use: commit
   - use: churn
     days: 7 # this repository is days old; thirty would be all of it
     top: 15
   - use: largest
     min: 100 # a hundred lines is a long file here, not a shrug
     top: 10
+  - use: largest # the same measure, pointed at the prose
+    kind: doc
+    min: 80
+  - use: unreferenced
+    min: 10
   - use: untested
     min: 40 # and so is forty untested ones
     top: 10

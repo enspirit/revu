@@ -9,6 +9,7 @@ import {
   signals,
   todos,
   uncitedDecisions,
+  unreferenced,
   untested,
 } from '../src/signals.mjs'
 
@@ -88,4 +89,24 @@ test('a source file no test path names is reported; one that is named is not', (
 test('a group with nothing to say does not appear at all', () => {
   const ids = signals(corpus({ 'README.md': ['doc', '# Quiet'] })).map((g) => g.id)
   assert.deepEqual(ids, [])
+})
+
+test('a file nothing else names is found; one that is named, or a test, is not', () => {
+  const corpus = (entries) =>
+    new Map(Object.entries(entries).map(([path, text]) => [path, { kind: 'code', lines: text.split('\n') }]))
+
+  const files = corpus({
+    'src/index.ts': "import { used } from './used'",
+    'src/used.ts': 'export const used = 1',
+    'src/leftover.ts': 'export const forgotten = 2',
+    'test/leftover.test.ts': 'nothing names this either',
+    '.revu.yml': 'title: revu',
+    'src/revu.ts': 'export const revu = 3',
+  })
+
+  assert.deepEqual(
+    unreferenced(files).map((i) => i.path),
+    ['src/leftover.ts'],
+    'an entry point, a test and a file others mention are all expected to be unnamed or named',
+  )
 })
