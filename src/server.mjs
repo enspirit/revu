@@ -8,7 +8,8 @@ import { marked } from 'marked'
 import { locate } from './anchor.mjs'
 import { render } from './export.mjs'
 import * as notes from './notes.mjs'
-import { commitCounts, openProject, workingChanges } from './project.mjs'
+import { highlight } from './highlight.mjs'
+import { gitFacts, openProject } from './project.mjs'
 import { parseLocations, runCommand } from './run.mjs'
 import { catalogue, headers, sized } from './scopes.mjs'
 
@@ -42,12 +43,12 @@ const excerpt = (lines, from, to) => {
 
 export const serve = ({ root, port, host = '127.0.0.1' }) => {
   let project = openProject(root)
-  let scopes = catalogue(project, { commits: commitCounts(root), changes: workingChanges(root) })
+  let scopes = catalogue(project, gitFacts(root))
   const store = notes.open(root)
 
   const reopen = () => {
     project = openProject(root)
-    scopes = catalogue(project, { commits: commitCounts(root), changes: workingChanges(root) })
+    scopes = catalogue(project, gitFacts(root))
   }
 
   const map = () => ({
@@ -73,11 +74,13 @@ export const serve = ({ root, port, host = '127.0.0.1' }) => {
     return { ...found, items: sized(items, project.corpus), ran: found.command, error: failed ? error : null }
   }
 
+  // Three forms of the same file: the lines (what a remark is anchored to and
+  // quoted from), the rendering (prose only), and the coloured lines.
   const file = (path) => {
     const found = project.corpus.get(path)
     if (!found) return null
     const html = found.kind === 'code' ? null : marked.parse(found.lines.join('\n'))
-    return { path, kind: found.kind, lines: found.lines, html }
+    return { path, kind: found.kind, lines: found.lines, html, tokens: highlight(path, found.lines) }
   }
 
   // A remark arrives either as a line range (source view) or as selected text

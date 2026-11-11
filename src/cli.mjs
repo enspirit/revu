@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import { CONFIG_NAME, template } from './config.mjs'
 import { render } from './export.mjs'
 import * as notes from './notes.mjs'
-import { commitCounts, openProject, workingChanges } from './project.mjs'
+import { gitFacts, openProject } from './project.mjs'
 import { catalogue, sized } from './scopes.mjs'
 import { serve } from './server.mjs'
 
@@ -84,7 +84,7 @@ if (flag('--help') || flag('-h')) {
   )
 } else if (command === 'scopes') {
   const project = openProject(root)
-  const all = catalogue(project, { commits: commitCounts(root), changes: workingChanges(root) })
+  const all = catalogue(project, gitFacts(root))
   process.stdout.write(
     `# Scopes — ${project.config.title}\n\nEach one is a list of places to look.\n\n` +
       `${asList(all, project.corpus)}\n`,

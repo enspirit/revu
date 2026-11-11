@@ -1,27 +1,30 @@
 /* Three panes, one typeface for prose and one for code, and nothing that moves
    on its own: this is a surface for reading for an hour. */
+/* One palette, each colour stating both its values: `light-dark()` picks by the
+   used colour-scheme, so the two rules at the bottom are the whole switch and
+   no colour is written twice. Warm dark rather than blue-black — the accent
+   has to carry from rust to amber to stay readable on either ground. */
 :root {
-  --paper: #fbfaf7;
-  --sunk: #f1efe9;
-  --ink: #24221e;
-  --dim: #7a756c;
-  --line: #e2ded4;
-  --accent: #8a4b2a;
-  --mark: #fdf3cf;
+  color-scheme: light dark;
+  --paper: light-dark(#fbfaf7, #1b1a18);
+  --sunk: light-dark(#f1efe9, #222120);
+  --ink: light-dark(#24221e, #e6e2da);
+  --dim: light-dark(#7a756c, #9a948a);
+  --line: light-dark(#e2ded4, #35332f);
+  --accent: light-dark(#8a4b2a, #e0a070);
+  --mark: light-dark(#fdf3cf, #3a3418);
+  --code-string: light-dark(#3f6b47, #93c08a);
+  --code-keyword: light-dark(#7b4a8f, #c79ad8);
+  --code-name: light-dark(#2f5d8a, #8ab6dd);
   --prose: Charter, Palatino, Georgia, serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
-  color-scheme: light dark;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1b1a18;
-    --sunk: #222120;
-    --ink: #e6e2da;
-    --dim: #9a948a;
-    --line: #35332f;
-    --accent: #e0a070;
-    --mark: #3a3418;
-  }
+/* Without these, the system decides. With one, you have. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 * {
@@ -202,21 +205,25 @@ textarea {
 }
 /* One row, four columns: what it is called, where it lives, what this scope
    has to say about it, how long it is. Only the folder may be clipped. */
+/* A block, not a flex row: inside a wrapping flex, a column that no longer
+   fits moves to the next line instead of giving up width, and the length ends
+   up under the name. The first line is its own flex row. */
 a.file {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.45rem;
-  align-items: baseline;
+  display: block;
   padding: 0.12rem 0.8rem;
   font: 0.78rem/1.6 var(--mono);
   color: var(--ink);
   text-decoration: none;
   cursor: pointer;
 }
+a.file .top {
+  display: flex;
+  gap: 0.45rem;
+  align-items: baseline;
+}
 /* What a grep or a linter said, under the place it said it about, with the
    whole width to itself. */
 a.file .said.line-two {
-  flex: 1 0 100%;
   max-width: 100%;
   padding: 0 0 0.15rem 0.6rem;
   font-size: 0.68rem;
@@ -346,6 +353,48 @@ a.file .n {
 .src {
   font: 0.82rem/1.55 var(--mono);
   white-space: pre;
+}
+/* Four colours, not twenty: this is a surface for reading an unfamiliar
+   codebase, and the point is to tell prose from structure at a glance. */
+.hljs-comment,
+.hljs-quote {
+  color: var(--dim);
+  font-style: italic;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-attr,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+  color: var(--code-string);
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-meta,
+.hljs-type,
+.hljs-literal,
+.hljs-number,
+.hljs-deletion {
+  color: var(--code-keyword);
+}
+.hljs-title,
+.hljs-name,
+.hljs-section,
+.hljs-built_in,
+.hljs-class .hljs-title,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag {
+  color: var(--code-name);
+}
+.hljs-strong,
+.hljs-section {
+  font-weight: 600;
+}
+.hljs-emphasis {
+  font-style: italic;
 }
 .row {
   display: flex;

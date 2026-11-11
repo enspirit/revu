@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { parse } from 'yaml'
 
-export const CONFIG_NAME = 'revu.yml'
+export const CONFIG_NAME = '.revu.yml'
 
 const DECISION_DIRS = [
   'doc/decisions',
@@ -16,6 +16,24 @@ const DECISION_DIRS = [
   'doc/architecture/decisions',
 ]
 
+// What a project gets when it has not said otherwise. `revu init` writes this
+// list out in full, with every parameter visible, so that choosing scopes is
+// editing a file rather than remembering a flag.
+export const DEFAULT_SCOPES = [
+  { use: 'reading' },
+  { use: 'changed' },
+  { use: 'decisions' },
+  { use: 'documents' },
+  { use: 'churn', days: 30, top: 15 },
+  { use: 'largest', min: 250, top: 15 },
+  { use: 'untested', min: 80, top: 15 },
+  { use: 'links' },
+  { use: 'orphans' },
+  { use: 'uncited' },
+  { use: 'todo', top: 50 },
+  { use: 'all' },
+]
+
 export const detectDecisions = (paths) =>
   DECISION_DIRS.find((dir) => paths.some((p) => p.startsWith(dir + '/'))) ?? null
 
@@ -24,18 +42,19 @@ export const defaults = (root) => ({
   reading: [],
   exclude: [],
   decisions: null,
-  scopes: [],
+  scopes: DEFAULT_SCOPES,
   maxFileBytes: 500_000,
 })
 
-// A declared scope is a command and a name. It is never run on load — only when
-// a reader enters it, with the command shown on the row they click.
-const scope = (raw, i) => ({
-  id: `run:${i}`,
-  title: raw.title ?? raw.run,
-  hint: raw.hint ?? raw.run,
-  command: raw.run,
-})
+// A scope is either one of ours, named by `use:` and tuned by the keys beside
+// it, or a command of yours. Both carry whatever title and hint you give them.
+const scope = (raw, i) => {
+  const { use, run, title, hint, ...params } = raw ?? {}
+  if (!use && !run) return null
+  // The position is part of the id: the same built-in may be declared twice on
+  // different parameters, and each is its own scope.
+  return { id: `${use ?? 'run'}:${i}`, use: use ?? null, command: run ?? null, title, hint, params }
+}
 
 export const merge = (root, raw) => {
   const cfg = { ...defaults(root), ...(raw ?? {}) }
@@ -43,7 +62,7 @@ export const merge = (root, raw) => {
     ...cfg,
     reading: [...cfg.reading],
     exclude: cfg.exclude.map((p) => p.replace(/\/$/, '')),
-    scopes: cfg.scopes.filter((s) => s?.run).map(scope),
+    scopes: cfg.scopes.map(scope).filter(Boolean),
   }
 }
 
@@ -53,23 +72,33 @@ export const load = (root) => {
   return merge(root, raw)
 }
 
+const asYaml = (s) =>
+  `  - use: ${s.use}` +
+  Object.entries(s)
+    .filter(([k]) => k !== 'use')
+    .map(([k, v]) => `\n    ${k}: ${v}`)
+    .join('')
+
 export const template = (root, reading) =>
-  `# Read by revu (https://github.com/blambeau/revu). Nothing else here is touched.
+  `# Read by revu. Nothing else in this directory is touched, and your remarks
+# are kept outside it — see the README.
 title: ${basename(root)}
 
-# The order a newcomer should meet this project in. Everything else follows.
+# The order a newcomer should meet this project in.
 reading:
 ${reading.map((p) => `  - ${p}`).join('\n') || '  []'}
 
 # Paths revu should not read at all.
 exclude: []
 
-# Scopes of your own. Anything that prints \`path:line: message\` — a linter, a
-# type checker, grep — is a list of places to look. Each runs only when you
-# enter it, never on load.
-# scopes:
-#   - title: Lint
-#     run: npx oxlint --format=unix
-#   - title: Types
-#     run: npx tsc --noEmit
+# The scopes offered in the left panel, in this order. Delete what you do not
+# want; the numbers are yours to argue with — what counts as a large file is a
+# question about this project, not about revu.
+scopes:
+${DEFAULT_SCOPES.map(asYaml).join('\n')}
+
+# Scopes of your own: anything that prints \`path:line: message\` — a linter, a
+# type checker, grep. Each runs only when you enter it, never on load.
+#  - title: Lint
+#    run: npx oxlint --format=unix
 `

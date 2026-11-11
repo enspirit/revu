@@ -3,9 +3,9 @@ import { test } from 'node:test'
 import { locate } from '../src/anchor.mjs'
 
 const lines = [
-  '# The eight invariants',
+  '# The rules',
   '',
-  '1. **Components are separated by a published contract.** A component',
+  '1. **Modules are separated by a published contract.** A module',
   '   states its public interface; nothing crosses a boundary.',
   '',
   '2. Everything that can be a pure function is one.',
@@ -20,12 +20,12 @@ test('a quote inside one line anchors to that line, exactly', () => {
 })
 
 test('a quote spanning wrapped prose anchors to the whole range', () => {
-  const quote = 'Components are separated by a published contract. A component states its public'
+  const quote = 'Modules are separated by a published contract. A module states its public'
   assert.deepEqual(locate(lines, quote), { from: 3, to: 4, exact: true })
 })
 
 test('markdown syntax dropped by rendering does not prevent the match', () => {
-  assert.equal(locate(lines, 'The eight invariants').from, 1)
+  assert.equal(locate(lines, 'The rules').from, 1)
 })
 
 test('a long quote whose tail drifted still anchors, and says it is approximate', () => {

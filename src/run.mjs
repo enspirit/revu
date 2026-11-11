@@ -30,7 +30,7 @@ export const parseLocations = (text, known) => {
   return items
 }
 
-// The command is the user's own, declared in their revu.yml and shown on the
+// The command is the user's own, declared in their .revu.yml and shown on the
 // row they clicked. A non-zero exit is normal here: a linter that found
 // something says so that way.
 export const runCommand = (root, command, timeout = 30_000) =>

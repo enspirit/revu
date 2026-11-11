@@ -61,16 +61,18 @@ const INLINE_LABEL = 24
 const itemRow = (item, counts) => {
   const at = item.line ? `${item.path}:${item.line}` : item.path
   const long = (item.label ?? '').length > INLINE_LABEL
-  const row = make('a', { className: 'file', title: `${at}${item.label ? ' — ' + item.label : ''}` }, [
+  const top = make('div', { className: 'top' }, [
     make('span', { className: 'base', textContent: baseOf(item.path) + (item.line ? ':' + item.line : '') }),
     make('span', { className: 'where', textContent: dirOf(item.path) }),
   ])
   const n = counts.get(item.path)
-  if (n) row.append(make('span', { className: 'n', textContent: `●${n}` }))
-  if (item.label && !long) row.append(make('span', { className: 'said', textContent: item.label }))
+  if (n) top.append(make('span', { className: 'n', textContent: `●${n}` }))
+  if (item.label && !long) top.append(make('span', { className: 'said', textContent: item.label }))
   if (item.size != null)
-    row.append(make('span', { className: 'size', title: `${item.size} lines`, textContent: item.size }))
-  if (long) row.append(make('span', { className: 'said line-two', textContent: item.label }))
+    top.append(make('span', { className: 'size', title: `${item.size} lines`, textContent: item.size }))
+
+  const row = make('a', { className: 'file', title: `${at}${item.label ? ' — ' + item.label : ''}` }, [top])
+  if (long) row.append(make('div', { className: 'said line-two', textContent: item.label }))
   if (state.file?.path === item.path) row.classList.add('on')
   row.onclick = () => openFile(item.path, item.line)
   return row
@@ -156,11 +158,12 @@ const drawFile = () => {
     return
   }
   const src = make('div', { className: 'src' })
+  const tokens = state.file.tokens
   state.file.lines.forEach((line, i) => {
     const no = i + 1
     const row = make('div', { className: 'row' }, [
       make('span', { className: 'ln', textContent: String(no) }),
-      make('code', { textContent: line }),
+      tokens ? make('code', { innerHTML: tokens[i] }) : make('code', { textContent: line }),
     ])
     row.dataset.line = no
     row.querySelector('.ln').onclick = (ev) => pickLine(no, ev.shiftKey)
@@ -377,6 +380,22 @@ const drawReview = () => {
 
 /* ---------- shell ---------- */
 
+// Three states, not two: following the system is the right default, and
+// overriding it is a choice this browser remembers.
+const THEMES = ['auto', 'light', 'dark']
+const FACE = { auto: '◐', light: '○', dark: '●' }
+
+const setTheme = (name) => {
+  if (name === 'auto') delete document.documentElement.dataset.theme
+  else document.documentElement.dataset.theme = name
+  localStorage.setItem('revu.theme', name)
+  $('#theme').textContent = FACE[name]
+  $('#theme').title = `appearance: ${name} — press d`
+}
+
+const cycleTheme = () =>
+  setTheme(THEMES[(THEMES.indexOf(localStorage.getItem('revu.theme') ?? 'auto') + 1) % THEMES.length])
+
 const sheet = async () => {
   $('#markdown').value = await api.markdown()
   $('#sheet').showModal()
@@ -412,6 +431,8 @@ $('#toggle').onclick = () => {
   else content.scrollTop = ratio * Math.max(1, content.scrollHeight - content.clientHeight)
 }
 $('#wide').onclick = () => document.body.classList.toggle('wide')
+$('#theme').onclick = cycleTheme
+setTheme(localStorage.getItem('revu.theme') ?? 'auto')
 $('#refresh').onclick = () => boot(true)
 $('#comment').onclick = () => {
   state.sel = takeSelection()
@@ -438,6 +459,7 @@ const SHORTCUTS = {
   r: () => state.file?.html && $('#toggle').onclick(),
   w: () => $('#wide').onclick(),
   e: () => sheet(),
+  d: () => cycleTheme(),
   '/': () => $('#search').focus(),
   Escape: () => exitScope(),
 }

@@ -24,7 +24,7 @@ const DOC_EXT = new Set(['md', 'mdx', 'adoc', 'txt'])
 const CODE_EXT = new Set(
   (
     'ts tsx js mjs cjs jsx vue svelte astro py rb go rs java kt swift php ex exs ' +
-    'sql sh bash zsh elo yml yaml toml json tf hcl css scss less html xml feature ' +
+    'sql sh bash zsh yml yaml toml json tf hcl css scss less html xml feature ' +
     'gradle rake gemspec cmake proto graphql prisma'
   ).split(' '),
 )
@@ -55,6 +55,7 @@ const gitFiles = (root) => {
   const out = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard'], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'ignore'],
   })
   return out.split('\n').filter(Boolean)
 }

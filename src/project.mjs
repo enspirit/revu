@@ -4,18 +4,22 @@ import { execFileSync } from 'node:child_process'
 import { detectDecisions, load } from './config.mjs'
 import { classify, listFiles, readLines } from './scan.mjs'
 
-export const commitCounts = (root, since = '30 days ago') => {
+// stderr is swallowed: "your current branch has no commits yet" is an answer
+// here, not a message for the person reading a review.
+const git = (root, args) =>
+  execFileSync('git', ['-C', root, ...args], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'ignore'],
+  })
+
+export const commitCounts = (root, days = 30) => {
   const counts = new Map()
   try {
-    const log = execFileSync(
-      'git',
-      ['-C', root, 'log', `--since=${since}`, '--name-only', '--pretty=format:'],
-      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
-    )
-    for (const path of log.split('\n'))
-      if (path) counts.set(path, (counts.get(path) ?? 0) + 1)
+    const log = git(root, ['log', `--since=${days} days ago`, '--name-only', '--pretty=format:'])
+    for (const path of log.split('\n')) if (path) counts.set(path, (counts.get(path) ?? 0) + 1)
   } catch {
-    /* not a git repository, or an empty history: the signal simply has nothing to say */
+    /* not a git repository, or an empty history: the scope simply has nothing to say */
   }
   return counts
 }
@@ -33,13 +37,29 @@ export const parseStatus = (text) =>
       path: line.slice(3).replace(/^.* -> /, '').replace(/^"|"$/g, ''),
     }))
 
-export const workingChanges = (root) => {
+// Without a ref: what the working tree holds that no commit does. With one:
+// everything this branch has that the ref does not.
+export const changedFiles = (root, against) => {
   try {
-    return parseStatus(
-      execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }),
-    )
+    if (!against) return parseStatus(git(root, ['status', '--porcelain']))
+    return git(root, ['diff', '--name-only', `${against}...HEAD`])
+      .split('\n')
+      .filter(Boolean)
+      .map((path) => ({ path, label: `not in ${against}` }))
   } catch {
     return []
+  }
+}
+
+// The git questions a scope may ask, answered once each. Injected rather than
+// imported so the catalogue stays a function of its inputs.
+export const gitFacts = (root) => {
+  const log = new Map()
+  const diff = new Map()
+  return {
+    commits: (days) => (log.has(days) ? log : log.set(days, commitCounts(root, days))).get(days),
+    changes: (against = '') =>
+      (diff.has(against) ? diff : diff.set(against, changedFiles(root, against || undefined))).get(against),
   }
 }
 

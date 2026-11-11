@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>revu</title>
     <link rel="stylesheet" href="/app.css" />
+    <script>
+      // Before the first paint, or the page flashes the system's choice and
+      // then corrects itself in front of you.
+      const chosen = localStorage.getItem('revu.theme')
+      if (chosen && chosen !== 'auto') document.documentElement.dataset.theme = chosen
+    </script>
   </head>
   <body>
     <aside id="map">
       <header>
         <h1 id="title">…</h1>
+        <button id="theme">◐</button>
         <button id="refresh" title="re-read the project from disk">re-read</button>
         <p id="counts" class="dim"></p>
         <input id="search" type="search" placeholder="find a file  ( / )" />

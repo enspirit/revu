@@ -29,9 +29,9 @@ const sample = corpus({
 test('a relative link resolves against the document that holds it', () => {
   assert.equal(resolveLink('doc/arch.md', './decisions/0001.md#why'), 'doc/decisions/0001.md')
   assert.equal(resolveLink('doc/arch.md', '../README.md'), 'README.md')
-  assert.equal(resolveLink('doc/arch.md', 'https://elo-lang.org'), null)
+  assert.equal(resolveLink('doc/arch.md', 'https://example.com'), null)
   assert.equal(resolveLink('doc/arch.md', '#a-section'), null)
-  assert.equal(resolveLink('doc/arch.md', '/@stdlib/loan/use/'), null, 'a served URL, not a file')
+  assert.equal(resolveLink('doc/arch.md', '/pricing/'), null, 'a served URL, not a file')
 })
 
 test('a link to a file revu does not open is still a sound link', () => {

@@ -15,25 +15,52 @@ It reads any project. It knows nothing about yours.
 
 ## It does not touch the project
 
-The project under review is opened read-only, and the remarks you write are
-stored **outside it**, under `$XDG_STATE_HOME/revu` (`~/.local/state/revu`),
-keyed by the project's path. Nothing is added to the tree, no branch, no
-scratch file, no `.gitignore` line.
+The project under review is opened read-only. Nothing is added to its tree: no
+branch, no scratch file, no `.gitignore` line.
 
-The single exception is `revu.yml` at the project root — one short file, written
-only when you ask for it by name (`revu init`), and read for four things: the
-title, the order a newcomer should read in, paths to skip, and scopes of your
-own.
+The single exception is `.revu.yml` at the project root — one short file,
+written only when you ask for it by name (`revu init`), and read for four
+things: the title, the order a newcomer should read in, paths to skip, and the
+scopes the project offers.
+
+## Where your remarks are kept
+
+Not in the project — in one JSON file per project, under your state directory:
+
+```
+$XDG_STATE_HOME/revu/<name>-<hash>.json      # or ~/.local/state/revu/…
+```
+
+`<name>` is the project folder's name and `<hash>` the first eight hex of a
+SHA-1 of its absolute path, so two checkouts of the same repository keep
+separate reviews. The file is rewritten — temp file, then rename — on every
+save, edit and delete, which is why a refresh, a restart or a week away costs
+nothing. `revu` prints the path when it starts and shows it under the review
+pane. `REVU_HOME` overrides the directory.
+
+The shape is plain, and yours to edit or delete:
+
+```json
+{ "root": "/home/you/code/some-project",
+  "notes": [ { "id": "db80c8a1", "at": "2026-02-03T09:12:44.102Z",
+               "path": "src/pricing.ts", "from": 40, "to": 48,
+               "quote": "export const quote = (plan) => …",
+               "exact": true, "tag": "must-fix", "body": "Rounds twice." } ] }
+```
+
+Two consequences worth knowing: it is **not** in git, so exporting is how a
+review leaves your machine; and if you move or rename the project, the hash
+changes and you start a fresh review — the old file stays where it was.
 
 ## Use
 
 ```bash
-npm install -g revu          # or: pnpm add -g revu
+npm install -g revu            # or: pnpm add -g revu
 
-revu ~/Work/ofi.dev          # read and annotate it, in the browser
-revu export ~/Work/ofi.dev   # the review so far, as markdown, on stdout
-revu scopes ~/Work/ofi.dev   # every scope — the places to look — as markdown
-revu init ~/Work/ofi.dev     # write revu.yml — the only file revu ever writes
+revu ~/code/some-project       # read and annotate it, in the browser
+revu export ~/code/some-project  # the review so far, as markdown, on stdout
+revu scopes ~/code/some-project  # every scope — the places to look — as markdown
+revu init ~/code/some-project    # write .revu.yml — the only file revu ever writes
 ```
 
 `--port N` moves the server (default 7777), `--no-open` keeps the browser shut.
@@ -50,36 +77,65 @@ Every row is the same four things: **what it is called** (with `:line` when the
 scope points at one), **where it lives**, **how long it is**, and whatever this
 scope has to say about it. A remark you have already made shows as `●2`.
 
-| Scope | Why it earns its place in a generated repository |
-|---|---|
-| Read in this order | what `revu.yml` asks a newcomer to meet first |
-| Changed, not committed | what the working tree holds that no commit does — the first question after an agent has been writing |
-| Decisions | the record, in order |
-| Documents | the prose |
-| Moving most | 30 days of commits: where the agent is currently churning |
-| Largest sources | the one complexity measure that needs no parser |
-| No test names it | a heuristic by basename, and labelled as one |
-| Broken links | prose and tree drifting apart, and prose drifts first |
-| Unlinked documents | a document reachable from nowhere was dropped, not written |
-| Uncited decisions | a decision nothing cites is dead, or undocumented in code |
-| Left for later | TODO, FIXME, XXX, HACK, WIP |
-| Every file | last, and rarely what anyone wants |
+**Centre, the file.** Markdown renders; <kbd>r</kbd> shows its source. Code
+shows with line numbers and syntax colour — four colours, not twenty, because
+the job is to tell prose from structure, not to decorate. A line you have
+already spoken about carries a mark in the gutter. <kbd>w</kbd> hides the map
+when a page wants the width.
 
-A scope with nothing in it does not appear. None of them claims a defect — they
-claim a place to look.
+**Right, the review.** Each remark carries a tag — `must-fix`, `question`,
+`scope`, `idea`, `praise`, `note` — the lines it quotes, and what you said.
+Click one and you are back where you wrote it: the file opens at its source,
+the whole range is selected again, and the remark is marked as the one you came
+from. (Selecting a remark's text still just selects it.) <kbd>e</kbd> exports
+the lot: copy it, or download it.
+
+## Which scopes, on what numbers
+
+A project says in `.revu.yml` which scopes it offers, in which order, and on
+what thresholds — because *what counts as a large file* is a question about
+your project, not about revu. `revu init` writes the list out in full so that
+choosing is editing a file rather than remembering a flag.
+
+```yaml
+scopes:
+  - use: reading             # the order declared above, for a newcomer
+  - use: changed             # the working tree against HEAD
+  - use: changed             # the same built-in twice, differently
+    against: main            #   … or this branch as a whole
+  - use: churn               # where the agent has been working
+    days: 14
+    top: 20
+  - use: largest             # your call, not ours
+    min: 400
+  - use: untested
+    min: 150
+  - use: decisions           # the record, in order
+  - use: uncited             # recorded, then cited by nothing
+  - use: links               # prose pointing at nothing
+  - use: orphans             # documents reachable from nowhere
+  - use: todo
+  - use: documents
+  - use: all                 # last, and rarely what anyone wants
+```
+
+Delete what you do not want; only what is listed is offered. Every entry takes
+`title:` and `hint:` if ours read wrong. With no `.revu.yml` at all, you get
+that list on its default numbers.
+
+None of them claims a defect. They claim a place to look.
 
 ### Scopes of your own
 
 The interesting ones are the ones revu cannot guess. Anything that prints a
 location — a linter, a type checker, `git grep`, your own script — is a list of
-places to look, so declare it in `revu.yml`:
+places to look:
 
 ```yaml
-scopes:
   - title: Lint
     run: npx oxlint --format=unix
-  - title: Says deploy, not publish      # the project's own vocabulary rule
-    hint: doc/2-domain-concepts.md
+  - title: Says deploy, not publish      # a project's own vocabulary rule
+    hint: the word was decided against
     run: git grep -n -i deploy -- '*.md'
 ```
 
@@ -90,18 +146,11 @@ does not have are dropped, so summaries and stack frames fall away on their own.
 **What that executes, and when.** A declared command runs only when you enter
 its scope — never on load, never on `revu scopes` — and the row you click shows
 the command it will run. It is still a command out of a file in the repository:
-if you did not write that `revu.yml`, read it before clicking.
+if you did not write that `.revu.yml`, read it before clicking.
 
-**Centre, the file.** Markdown renders; <kbd>r</kbd> shows its source. Code
-shows with line numbers, and a line you have already spoken about carries a mark
-in the gutter. <kbd>w</kbd> hides the map when a page wants the width.
-
-**Right, the review.** Each remark carries a tag — `must-fix`, `question`,
-`scope`, `idea`, `praise`, `note` — the lines it quotes, and what you said.
-Click one and you are back where you wrote it: the file opens at its source,
-the whole range is selected again, and the remark is marked as the one you came
-from. (Selecting a remark's text still just selects it.) <kbd>e</kbd> exports
-the lot: copy it, or download it.
+**Light or dark** follows the system. <kbd>d</kbd> cycles *auto → light →
+dark*, and this browser remembers which — for reading dark at a bright desk,
+or the other way round.
 
 **Saying something** is two steps, never one: *point*, then *speak*. Click a
 line number — <kbd>shift</kbd>-click a second one for a range — or select text
@@ -124,9 +173,9 @@ no longer see is a remark made blind.
 ## What comes out
 
 ```markdown
-# Review of ofi.dev
+# Review of some-project
 
-2026-11-11 · 3 remarks · 1 must-fix, 1 question, 1 scope
+2026-02-03 · 3 remarks · 1 must-fix, 1 question, 1 scope
 
 A human read this repository and wrote the remarks below. Each one quotes the
 lines it is about; the address is `path:from-to`. Treat a remark as the
@@ -134,34 +183,36 @@ requirement, not as a suggestion to paraphrase back.
 
 ## Overall
 
-**scope** — M1 is growing a studio nobody asked for.
+**scope** — Three ways to do caching now. Pick one before adding a fourth.
 
-## CLAUDE.md
+## src/pricing.ts
 
-### CLAUDE.md:67 — must-fix
+### src/pricing.ts:40-48 — must-fix
 
-> 2. **Everything that can be a pure, data-driven, stateless function is one**,
+> export const quote = (plan) => round(plan.base * vat(plan.country))
 
-This invariant is not honoured in api/src/html.ts.
+Rounds twice: `round` here and again in the caller.
 ```
 
 Every remark repeats its own path. The section heading says it too, and that is
-deliberate: remarks get read, quoted and acted on one at a time, and `L67` by
+deliberate: remarks get read, quoted and acted on one at a time, and `L40` by
 itself is an address to nowhere.
 
 ## Limits, stated rather than discovered
 
-Lockfiles, binaries, images and files over 500 kB are not offered — a dead entry
-in the tree is worse than no entry. There is no syntax highlighting. There is no
-authentication, because the server binds to `127.0.0.1` and renders your own
-repository's markdown, raw HTML included: do not point it at a repository you
-would not open in a browser. Remarks are per project path; move the project and
-you start a fresh review.
+Lockfiles, binaries, images and files over 500 kB are not offered — a dead row
+is worse than no row. There is no authentication, because the server binds to
+`127.0.0.1` and renders your own repository's markdown, raw HTML included: do
+not point it at a repository you would not open in a browser. Remarks are per
+project path; move the project and you start a fresh review. The palette is one
+set of `light-dark()` values, which wants a 2024-or-later browser — fine for
+the one you already have open, and the reason the theme is not written twice.
 
 ## Build
 
-Two dependencies (`marked`, `yaml`), no build step, Node 20 or later.
-`npm test` runs the suite: every signal, the anchor and the export are pure
-functions, and that is where the tests are.
+Three dependencies (`marked`, `yaml`, `highlight.js`), no build step, Node 20
+or later. `npm test` runs the suite: the scopes, the signals, the anchor, the
+highlighter's line split and the export are pure functions, and that is where
+the tests are.
 
 MIT.

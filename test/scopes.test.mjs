@@ -15,52 +15,73 @@ const project = (files, config = {}) => {
   }
 }
 
-const sample = project([
+const FILES = [
   ['README.md', 'doc', 10],
   ['doc/a.md', 'doc', 20],
   ['doc/decisions/0001-x.md', 'decision', 30],
-  ['src/a.ts', 'code', 400],
-])
+  ['src/small.ts', 'code', 90],
+  ['src/big.ts', 'code', 400],
+]
 
-test('the reading order is a scope, and only when one is configured', () => {
-  const ids = catalogue(sample).map((s) => s.id)
-  assert.ok(!ids.includes('reading'), 'no revu.yml reading order, no scope')
+const git = { commits: () => new Map([['src/big.ts', 7]]), changes: () => [{ path: 'src/big.ts', label: 'modified' }] }
 
-  const asked = project(
-    [
-      ['README.md', 'doc', 10],
-      ['doc/a.md', 'doc', 20],
-    ],
-    { reading: ['README.md', 'nowhere.md'] },
+test('a built-in is offered only when the config asks for it', () => {
+  const asked = project(FILES, { scopes: [{ use: 'decisions' }] })
+  assert.deepEqual(
+    catalogue(asked, git).map((s) => s.title),
+    ['Decisions'],
   )
-  const reading = catalogue(asked).find((s) => s.id === 'reading')
-  assert.deepEqual(reading.items, [{ path: 'README.md', label: '' }], 'a path that is gone is dropped')
 })
 
-test('the working tree is a scope when it holds anything', () => {
-  const changes = [{ path: 'src/a.ts', label: 'modified' }, { path: 'gone.ts', label: 'deleted' }]
-  const working = catalogue(sample, { changes }).find((s) => s.id === 'working')
-  assert.deepEqual(working.items, [{ path: 'src/a.ts', label: 'modified' }])
-  assert.equal(catalogue(sample, { changes: [] }).find((s) => s.id === 'working'), undefined)
+test('its parameters reach it, and the hint says what they were', () => {
+  const asked = project(FILES, { scopes: [{ use: 'largest', min: 500 }, { use: 'largest', min: 100 }] })
+  const [strict, loose] = catalogue(asked, git)
+  assert.deepEqual(strict.items, [], 'nothing is 500 lines here')
+  assert.deepEqual(
+    loose.items.map((i) => i.path),
+    ['src/big.ts'],
+  )
+  assert.equal(loose.hint, '100 lines or more, longest first')
+  assert.notEqual(strict.id, loose.id, 'the same built-in twice is two scopes')
+})
+
+test('a title and a hint of your own win over ours', () => {
+  const asked = project(FILES, { scopes: [{ use: 'churn', days: 7, title: 'This week', hint: 'since Monday' }] })
+  const [scope] = catalogue(asked, git)
+  assert.equal(scope.title, 'This week')
+  assert.equal(scope.hint, 'since Monday')
+})
+
+test('the reading order drops a path the project no longer has', () => {
+  const asked = project(FILES, { reading: ['README.md', 'gone.md'], scopes: [{ use: 'reading' }] })
+  assert.deepEqual(catalogue(asked, git)[0].items, [{ path: 'README.md', label: '' }])
+})
+
+test('a name we do not have is a typo in a file, not a crash', () => {
+  const asked = project(FILES, { scopes: [{ use: 'nonsense' }, { use: 'documents' }] })
+  assert.deepEqual(
+    catalogue(asked, git).map((s) => s.title),
+    ['Documents'],
+  )
 })
 
 test('a declared command is a scope with no count until it is entered', () => {
-  const declared = project([['src/a.ts', 'code', 4]], {
-    scopes: [{ title: 'Lint', run: 'npx oxlint --format=unix' }],
-  })
-  const head = headers(catalogue(declared)).at(-1)
-  assert.deepEqual(head, {
-    id: 'run:0',
-    title: 'Lint',
-    hint: 'npx oxlint --format=unix',
-    command: 'npx oxlint --format=unix',
-    count: null,
-  })
+  const asked = project(FILES, { scopes: [{ title: 'Lint', run: 'npx oxlint --format=unix' }] })
+  assert.deepEqual(headers(catalogue(asked, git)), [
+    {
+      id: 'run:0',
+      title: 'Lint',
+      hint: 'npx oxlint --format=unix',
+      command: 'npx oxlint --format=unix',
+      count: null,
+    },
+  ])
 })
 
 test('every row carries the length of its file', () => {
-  assert.deepEqual(sized([{ path: 'src/a.ts' }, { path: 'nowhere.ts' }], sample.corpus), [
-    { path: 'src/a.ts', size: 400 },
+  const { corpus } = project(FILES)
+  assert.deepEqual(sized([{ path: 'src/big.ts' }, { path: 'nowhere.ts' }], corpus), [
+    { path: 'src/big.ts', size: 400 },
     { path: 'nowhere.ts', size: null },
   ])
 })
@@ -85,8 +106,7 @@ test('a tool is read through the format they all share', () => {
 })
 
 test('the same place twice is one row', () => {
-  const known = new Set(['a.ts'])
-  assert.equal(parseLocations('a.ts:1: one\na.ts:1: again', known).length, 1)
+  assert.equal(parseLocations('a.ts:1: one\na.ts:1: again', new Set(['a.ts'])).length, 1)
 })
 
 test('git status is read for what changed and how', () => {
