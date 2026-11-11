@@ -1,7 +1,23 @@
 {
-  "name": "revu",
-  "version": "0.1.0",
+  "name": "@enspirit/revu",
+  "version": "1.0.0",
   "description": "Read a project an AI wrote, annotate it, hand back one markdown review.",
+  "keywords": [
+    "code-review",
+    "ai",
+    "agents",
+    "reading",
+    "annotation",
+    "static-analysis",
+    "cli"
+  ],
+  "homepage": "https://revu.enspirit.be",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enspirit/revu.git"
+  },
+  "bugs": "https://github.com/enspirit/revu/issues",
+  "author": "Bernard Lambeau <bernard.lambeau@enspirit.be> (https://enspirit.dev)",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -10,13 +26,18 @@
   "files": [
     "src",
     "web",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "highlight.js": "^11.12.0",

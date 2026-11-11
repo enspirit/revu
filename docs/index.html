@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revu — Code review in times of AI</title>
+    <meta
+      name="description"
+      content="Most of the code we are asked to vouch for this year was written by an agent. Review by diff assumed a small change, by a colleague, against a base you knew. All three assumptions are gone. Revu is a reading surface for code you did not write."
+    />
+    <link rel="canonical" href="https://revu.enspirit.be/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Revu — Code review in times of AI" />
+    <meta
+      property="og:description"
+      content="Review by diff is dead. The new job is reading code nobody on your side wrote. Revu is the reading surface for it — open source, from Enspirit."
+    />
+    <meta property="og:url" content="https://revu.enspirit.be/" />
+    <meta property="og:image" content="https://revu.enspirit.be/revu-dark.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      /* The page wears the tool's own clothes: one palette stating both its
+         values, so light and dark are never written twice. */
+      :root {
+        color-scheme: light dark;
+        --paper: light-dark(#fbfaf7, #1b1a18);
+        --sunk: light-dark(#f1efe9, #222120);
+        --ink: light-dark(#24221e, #e6e2da);
+        --dim: light-dark(#7a756c, #9a948a);
+        --line: light-dark(#e2ded4, #35332f);
+        --accent: light-dark(#8a4b2a, #e0a070);
+        --mark: light-dark(#fdf3cf, #3a3418);
+        --prose: Charter, Palatino, Georgia, serif;
+        --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0 1.2rem 6rem;
+        font: 17px/1.65 var(--prose);
+        color: var(--ink);
+        background: var(--paper);
+      }
+      main,
+      header,
+      footer {
+        max-width: 38rem;
+        margin: 0 auto;
+      }
+      header {
+        padding: 4rem 0 2rem;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        font-size: 2.1rem;
+        line-height: 1.15;
+        margin: 0 0 0.6rem;
+      }
+      .lede {
+        font-size: 1.15rem;
+        color: var(--dim);
+        margin: 0 0 1.4rem;
+      }
+      .byline {
+        font: 0.85rem var(--mono);
+        color: var(--dim);
+      }
+      .byline a {
+        color: var(--dim);
+      }
+      h2 {
+        font-size: 1.3rem;
+        margin: 2.8rem 0 0.7rem;
+        line-height: 1.25;
+      }
+      h3 {
+        font-size: 1.05rem;
+        margin: 1.8rem 0 0.4rem;
+      }
+      p,
+      ul {
+        margin: 0 0 1.1rem;
+      }
+      li {
+        margin-bottom: 0.5rem;
+      }
+      a {
+        color: var(--accent);
+        text-decoration-color: var(--line);
+        text-underline-offset: 2px;
+      }
+      strong {
+        font-weight: 600;
+      }
+      code {
+        font: 0.85em var(--mono);
+        background: var(--sunk);
+        padding: 0.1em 0.3em;
+        border-radius: 0.2rem;
+      }
+      pre {
+        background: var(--sunk);
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 0.9rem 1rem;
+        overflow-x: auto;
+        font: 0.8rem/1.6 var(--mono);
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: 1em;
+      }
+      blockquote {
+        margin: 1.6rem 0;
+        padding: 0 0 0 1rem;
+        border-left: 3px solid var(--accent);
+        font-size: 1.05rem;
+      }
+      /* The screenshot breaks out of the text column: at prose width the panes
+         are a smudge, and the point of showing it is that you can read it. */
+      figure {
+        margin: 2.2rem 0 2.6rem;
+        max-width: 62rem;
+        margin-inline: calc(50% - 31rem);
+      }
+      @media (max-width: 64rem) {
+        figure {
+          margin-inline: 0;
+          max-width: 100%;
+        }
+      }
+      figure img {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        display: block;
+      }
+      figcaption {
+        font-size: 0.85rem;
+        color: var(--dim);
+        margin-top: 0.5rem;
+        text-align: center;
+      }
+      .cards {
+        display: grid;
+        gap: 0.8rem;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        margin: 1.4rem 0 2rem;
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 0.9rem 1rem;
+        background: var(--sunk);
+      }
+      .card h3 {
+        margin: 0 0 0.3rem;
+        font-size: 1rem;
+      }
+      .card p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--dim);
+      }
+      .callout {
+        background: var(--mark);
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 1rem 1.2rem;
+        margin: 2rem 0;
+      }
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+      footer {
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line);
+        font-size: 0.9rem;
+        color: var(--dim);
+      }
+
+      /* The bar at the top: who made this, and where the code is. Both have to
+         be seen without looking for them, so they are marks, not footnotes. */
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: color-mix(in srgb, var(--paper) 92%, transparent);
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid var(--line);
+        margin: 0 -1.2rem;
+        padding: 0 1.2rem;
+      }
+      .bar-inner {
+        max-width: 52rem;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        height: 3.4rem;
+      }
+      .mark {
+        font: 600 1.1rem var(--mono);
+        color: var(--ink);
+        text-decoration: none;
+        letter-spacing: -0.02em;
+      }
+      .mark span {
+        color: var(--accent);
+      }
+      .bar nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .icon-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.35rem 0.7rem;
+        border: 1px solid var(--line);
+        border-radius: 2rem;
+        text-decoration: none;
+        color: var(--ink);
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: var(--paper);
+      }
+      .icon-link:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .icon-link svg {
+        width: 1.15rem;
+        height: 1.15rem;
+        display: block;
+      }
+      /* The Enspirit mark is wider than it is tall; give it its own ratio
+         rather than squashing it into the square the octocat wants. */
+      .icon-link svg.enspirit {
+        width: 1.45rem;
+      }
+      @media (max-width: 34rem) {
+        .icon-link .label {
+          display: none;
+        }
+      }
+
+      /* Want a code review? — the one thing we would like you to click. */
+      .cta {
+        border: 1px solid var(--accent);
+        border-radius: 0.5rem;
+        padding: 1.4rem 1.5rem;
+        margin: 2.5rem 0;
+        background: var(--mark);
+      }
+      .cta h2 {
+        margin: 0 0 0.4rem;
+        font-size: 1.35rem;
+      }
+      .cta p {
+        margin: 0 0 1rem;
+      }
+      .button {
+        display: inline-block;
+        background: var(--accent);
+        color: var(--paper);
+        border-radius: 0.4rem;
+        padding: 0.55rem 1.1rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .button:hover {
+        filter: brightness(1.1);
+      }
+      .button.ghost {
+        background: none;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        margin-left: 0.5rem;
+      }
+      /* The one line most readers came for. */
+      .install {
+        margin: 1.1rem 0 0;
+      }
+      .install code {
+        display: inline-block;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 0.3rem;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.95rem;
+        user-select: all;
+      }
+      .prompt {
+        color: var(--dim);
+        user-select: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="bar">
+      <div class="bar-inner">
+        <a class="mark" href="/">revu<span>.</span></a>
+        <nav>
+          <a class="icon-link" href="https://github.com/enspirit/revu" rel="noopener">
+            <!-- GitHub's own mark, used to link to GitHub. -->
+            <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+              />
+            </svg>
+            <span class="label">GitHub</span>
+          </a>
+          <a class="icon-link" href="https://enspirit.dev" rel="noopener">
+            <!-- Enspirit's logo mark, one colour, inlined so it takes the link's
+                 colour in both themes. Source: branding-assets/Logo/Logo Mark. -->
+            <svg class="enspirit" viewBox="0 0 113.92 90" fill="currentColor" aria-hidden="true">
+              <path d="m30.0006,30C30.0006,13.4315,43.4321,0,60.0006,0s30,13.4315,30,30H30.0006Z" />
+              <path
+                d="m86.95,43.1401c-4.8699,9.98-15.1199,16.8599-26.95,16.8599-16.54,0-30-13.46-30-30H0c0,33.0801,26.9199,60,60,60,23.65,0,44.16-13.7598,53.9199-33.7002l-26.97-13.1597Z"
+              />
+            </svg>
+            <span class="label">Enspirit</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <header>
+      <h1>Revu — Code review in times of AI</h1>
+      <p class="lede">
+        Most of the code we are asked to vouch for this year was written by an agent, at a speed no
+        reviewer can match. Review by diff assumed a small change, by a colleague, against a base
+        you already knew. All three assumptions are gone.
+      </p>
+      <p class="byline">
+        Bernard Lambeau · <a href="https://enspirit.dev">Enspirit</a> · 11 November 2026
+      </p>
+    </header>
+
+    <main>
+      <figure>
+        <a href="revu-dark.jpg">
+          <picture>
+            <source srcset="revu-dark.jpg" media="(prefers-color-scheme: dark)" />
+            <img
+              src="revu-light.jpg"
+              alt="Revu's three panes: scopes on the left, a source file with syntax colour in the middle, remarks anchored to lines on the right."
+            />
+          </picture>
+        </a>
+        <figcaption>
+          Revu reading Revu — scopes on the left, the source in the middle, remarks on the right.
+          The one marked <em>must-fix</em> is a real defect it found on its first pass over itself.
+        </figcaption>
+      </figure>
+
+      <div class="cta">
+        <h2>Want a code review?</h2>
+        <p>
+          We read agent-written and vibe-coded codebases for a living, and leave you with the
+          harness as well as the report. Revu is the tool we do it with — free, open source, yours.
+        </p>
+        <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
+        <a class="button ghost" href="https://github.com/enspirit/revu">Revu on GitHub</a>
+        <p class="install"><code>npm install -g @enspirit/revu</code></p>
+      </div>
+
+      <h2>The job changed under us</h2>
+
+      <p>
+        A year ago, the work was writing software. Today a growing part of it is answering a harder
+        question about software somebody else's agent already wrote: <em>is this safe to run?</em>
+      </p>
+
+      <p>
+        The projects arriving at our door have a shape in common. A founder with no engineering
+        background has vibe-coded a product that demos beautifully and now holds real customer data.
+        A team has shipped in three weeks what would have taken six months, and cannot say which
+        parts are load-bearing. A codebase has a hundred tests, all green, none of which fail when
+        you break the business rule on purpose. In every case we are handed a repository
+        <strong>nobody on our side wrote</strong>, that no single person ever held in their head,
+        delivered complete rather than in increments.
+      </p>
+
+      <p>
+        This is the new job of the professional software engineer, and it is not going away: reading
+        code you did not write and did not watch being written, well enough to put your name on it —
+        and putting a harness around it so that the next thousand agent-written lines cannot quietly
+        break what matters.
+      </p>
+
+      <h2>Review by diff is dead</h2>
+
+      <p>
+        Code review as we have practised it for fifteen years rests on three assumptions: the change
+        is <em>small</em>, the author is a <em>colleague</em> who can explain their reasoning, and
+        both of you know the <em>base</em> it applies to. Pull request, line comments, approve.
+      </p>
+
+      <p>All three are now false.</p>
+
+      <ul>
+        <li>
+          <strong>The diff is the whole repository.</strong> Six hundred files in an afternoon is a
+          normal day for an agent. A three-hundred-file pull request is not a review, it is a wall.
+        </li>
+        <li>
+          <strong>The author cannot be questioned.</strong> An agent will explain anything you like,
+          fluently, after the fact. Its explanation is generated, not remembered — so the usual
+          review conversation, where understanding is repaired by asking, does not converge.
+        </li>
+        <li>
+          <strong>You do not know the base.</strong> The thing you most need is not "what changed"
+          but "what <em>is</em> here, and where should I look first".
+        </li>
+      </ul>
+
+      <p>
+        When the unit of review stops being a change and becomes a codebase, the diff is simply the
+        wrong lens.
+      </p>
+
+      <h2>"The agents will review it" is a dead end</h2>
+
+      <p>
+        The tempting answer is to point a second agent at the first one's output. We tried it,
+        repeatedly. It fails for reasons that have nothing to do with how good the models get.
+      </p>
+
+      <ul>
+        <li>
+          <strong>A generated review is more text to read.</strong> You end up reviewing the review —
+          and that text is optimised for sounding thorough, not for being read. The pile grows; the
+          understanding does not.
+        </li>
+        <li>
+          <strong>Accountability cannot be delegated.</strong> When a client asks whether their
+          system can be put in front of customers, the deliverable is a signature, not a
+          probability. Signing something nobody has read is the <em>problem</em> we are hired to
+          fix; it cannot also be the method.
+        </li>
+        <li>
+          <strong>The decisive judgements are not in the repository.</strong> Whether the code does
+          the right thing for the business, whether a risk is acceptable, whether this is the system
+          the client actually needs — none of that can be read off the source, by anybody, at any
+          model size.
+        </li>
+      </ul>
+
+      <p>
+        So humans will look at the code. That is settled. The open question is <em>with what</em> —
+        and the honest answer, in our shop, was: with nothing built for this. We were reading
+        agent-written repositories in an editor, keeping the map in our heads, and writing feedback
+        in a chat window that lost it the next morning.
+      </p>
+
+      <blockquote>
+        AI writes, humans validate — but that only holds while validating stays
+        <strong>cheaper</strong> than writing. Every tool we build is measured against that
+        inequality.
+      </blockquote>
+
+      <p>
+        Agents remain excellent at the part they are actually good at: <em>pointing</em>. Run the
+        linter, the type checker, the grep for a rule your project decided on. That is an
+        instrument, not a judge — and it is exactly how Revu uses them.
+      </p>
+
+      <h2>So we built Revu</h2>
+
+      <p>
+        <strong>Revu is a reading surface for code you did not write.</strong> You point it at a
+        repository; it opens in your browser; you read, you say things about specific lines, and it
+        hands you back <strong>one markdown text</strong> to give to whoever writes the next change —
+        a colleague, or the agent.
+      </p>
+
+      <h3>Scopes, not a file tree</h3>
+      <p>
+        A tree of six hundred files is not a question anybody has. The left panel is a list of
+        <em>scopes</em> — named sets of places to look, entered one at a time, stacking as you go:
+        what changed and was never committed, where the agent has been churning this week, the
+        longest sources, the files no test so much as names, documents nothing links to, decisions
+        recorded and then cited nowhere. Each one is a cheap, honest signal. None of them claims a
+        defect; they claim a place to look.
+      </p>
+      <p>
+        You declare which scopes your project offers, and on what numbers, in a small
+        <code>.revu.yml</code> — because what counts as a large file is a question about your
+        project, not about our tool. And anything that prints a location becomes a scope of its own:
+      </p>
+      <pre><code>scopes:
+  - use: largest
+    min: 400                      # your call, not ours
+  - title: Says deploy, not publish
+    run: git grep -n -i deploy -- '*.md'</code></pre>
+
+      <h3>Remarks that come back as requirements</h3>
+      <p>
+        Click a line number, press <code>c</code>, say what should change. Each remark is anchored to
+        its lines, quotes them, and carries a tag — <code>must-fix</code>, <code>question</code>,
+        <code>scope</code>. The export is one markdown document, addressed to whoever writes next,
+        opening with the only instruction that matters: <em>treat a remark as the requirement, not
+        as a suggestion to paraphrase back.</em>
+      </p>
+
+      <h3>What it refuses to do</h3>
+      <p>
+        It <strong>never writes to the project under review</strong> — your remarks live outside it,
+        so a review can span days without touching a branch. And there is
+        <strong>no AI inside Revu</strong>. That is deliberate. The judgement is the product; the
+        tool's job is to make reading cheap enough that the judgement actually happens.
+      </p>
+
+      <p>
+        About two thousand lines, three dependencies, no build step. It is a tool, not a platform.
+      </p>
+
+      <h2>Where it comes from</h2>
+
+      <p>
+        We build with agents every day, at scale, and we have the scar tissue.
+        <a href="https://ofi.dev">o=f(i)</a> — a formula as a service, where a small program answers
+        at a URL — is largely agent-written, specification first, and reviewing it is what made the
+        gap obvious. <a href="https://klaro.cards">Klaro Cards</a>, our project-management product,
+        is where the same practices meet a codebase with years of history and real customers behind
+        it. Revu was built in a day, out of that frustration, and the first thing we did was point it
+        at itself — which is how the remark in the screenshot above was written.
+      </p>
+
+      <div class="cards">
+        <div class="card">
+          <h3><a href="https://enspirit.dev">Enspirit</a></h3>
+          <p>Software engineering, done with agents and signed by humans.</p>
+        </div>
+        <div class="card">
+          <h3><a href="https://klaro.cards">Klaro Cards</a></h3>
+          <p>Project management that reads like a deck of cards, not a spreadsheet.</p>
+        </div>
+        <div class="card">
+          <h3><a href="https://ofi.dev">o=f(i)</a></h3>
+          <p>A formula as a service. You publish a calculation; it answers at a URL.</p>
+        </div>
+      </div>
+
+      <h2>Use it, or ask us to</h2>
+
+      <p>
+        Revu is <strong>open source</strong> under the MIT licence. It runs locally, binds to
+        <code>127.0.0.1</code>, and sends nothing anywhere.
+      </p>
+
+      <pre><code><span class="prompt">$</span> npm install -g @enspirit/revu
+<span class="prompt">$</span> revu ~/code/the-project-you-inherited</code></pre>
+
+      <p>
+        That is the whole installation. It opens in your browser on
+        <code>127.0.0.1:7777</code>; with no path it reads the directory you are standing in.
+      </p>
+
+      <div class="cta">
+        <h2>Want a code review?</h2>
+        <p>
+          That is our day job. We review vibe-coded products before they meet real users, put test
+          and deployment harnesses around agent-built codebases, and hand back the harness as well
+          as the report — not just an opinion. Tell us what you have inherited.
+        </p>
+        <a class="button" href="https://enspirit.dev">Talk to Enspirit</a>
+        <a class="button ghost" href="https://github.com/sponsors/enspirit">Sponsor the work</a>
+      </div>
+
+      <p>
+        If Revu is useful to you and you would like the open-source work to continue, you can
+        <a href="https://github.com/sponsors/enspirit">sponsor Enspirit on GitHub</a>. Issues and
+        pull requests are welcome on
+        <a href="https://github.com/enspirit/revu">the repository</a>; the thing we most want to hear
+        about is the scope you wished existed while reading somebody else's code.
+      </p>
+    </main>
+
+    <footer>
+      <p>
+        <a href="https://github.com/enspirit/revu">Revu on GitHub</a> ·
+        <a href="https://github.com/sponsors/enspirit">Sponsor our open source</a> ·
+        <a href="https://enspirit.dev">Enspirit</a> · <a href="https://klaro.cards">Klaro Cards</a> ·
+        <a href="https://ofi.dev">o=f(i)</a>
+      </p>
+      <p>© 2026 Enspirit SRL · Revu is MIT licensed.</p>
+    </footer>
+  </body>
+</html>

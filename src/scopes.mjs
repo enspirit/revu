@@ -18,41 +18,51 @@ import {
 const paths = (items) => items.map((path) => ({ path, label: '' }))
 const of = (corpus, kind) => paths([...corpus].filter(([, f]) => f.kind === kind).map(([path]) => path))
 
+// What a row of this scope is *about*. A row shows the filename, the folder it
+// is in, and at most one number on the right — never four things competing for
+// two hundred pixels. Which number depends on the question the scope asks:
+// "which files are long?" wants the length; "what did the agent touch?" wants
+// the status; a linter wants its message, and that does not fit on the line at
+// all, so it goes underneath.
+const LENGTH = { metric: 'size' } // the number of lines, on the right
+const STATE = { metric: 'label' } // what this scope measured, on the right
+const MESSAGE = { metric: 'none', detail: 'label' } // what a tool said, underneath
+
 // Each built-in says what it is called, what it is for — in terms of the
 // numbers it was given — and how to find its items.
 const BUILT_IN = {
-  reading: {
+  reading: { row: LENGTH,
     title: 'Read in this order',
     hint: 'as .revu.yml asks',
     items: (p) => paths(p.config.reading.filter((path) => p.corpus.has(path))),
   },
-  changed: {
+  changed: { row: STATE,
     title: (par) => (par.against ? `Changed against ${par.against}` : 'Changed, not committed'),
     hint: (par) => (par.against ? 'this branch, as a whole' : 'the working tree against HEAD'),
     items: (p, par, git) => git.changes(par.against),
   },
-  decisions: { title: 'Decisions', hint: 'the record, in order', items: (p) => of(p.corpus, 'decision') },
-  documents: { title: 'Documents', hint: 'the prose', items: (p) => of(p.corpus, 'doc') },
-  churn: {
+  decisions: { row: LENGTH, title: 'Decisions', hint: 'the record, in order', items: (p) => of(p.corpus, 'decision') },
+  documents: { row: LENGTH, title: 'Documents', hint: 'the prose', items: (p) => of(p.corpus, 'doc') },
+  churn: { row: STATE,
     title: 'Moving most',
     hint: (par) => `commits in the last ${par.days ?? 30} days`,
     items: (p, par, git) => churn(git.commits(par.days ?? 30), par),
   },
-  largest: {
+  largest: { row: LENGTH,
     title: 'Largest sources',
     hint: (par) => `${par.min ?? 250} lines or more, longest first`,
     items: (p, par) => bigFiles(p.corpus, par),
   },
-  untested: {
+  untested: { row: LENGTH,
     title: 'No test names it',
     hint: (par) => `${par.min ?? 80} lines or more, heuristic, by basename`,
     items: (p, par) => untested(p.corpus, par),
   },
-  links: { title: 'Broken links', hint: 'prose pointing at nothing', items: (p) => brokenLinks(p.corpus, p.paths) },
-  orphans: { title: 'Unlinked documents', hint: 'reachable from nowhere', items: (p) => orphanDocs(p.corpus) },
-  uncited: { title: 'Uncited decisions', hint: 'recorded, then dropped', items: (p) => uncitedDecisions(p.corpus) },
-  todo: { title: 'Left for later', hint: 'TODO, FIXME, XXX, HACK, WIP', items: (p, par) => todos(p.corpus, par) },
-  all: { title: 'Every file', hint: 'everything revu can open', items: (p) => paths(p.files.map((f) => f.path)) },
+  links: { row: MESSAGE, title: 'Broken links', hint: 'prose pointing at nothing', items: (p) => brokenLinks(p.corpus, p.paths) },
+  orphans: { row: LENGTH, title: 'Unlinked documents', hint: 'reachable from nowhere', items: (p) => orphanDocs(p.corpus) },
+  uncited: { row: LENGTH, title: 'Uncited decisions', hint: 'recorded, then dropped', items: (p) => uncitedDecisions(p.corpus) },
+  todo: { row: MESSAGE, title: 'Left for later', hint: 'TODO, FIXME, XXX, HACK, WIP', items: (p, par) => todos(p.corpus, par) },
+  all: { row: LENGTH, title: 'Every file', hint: 'everything revu can open', items: (p) => paths(p.files.map((f) => f.path)) },
 }
 
 const say = (value, params) => (typeof value === 'function' ? value(params) : value)
@@ -66,6 +76,7 @@ export const catalogue = (project, git = { commits: () => new Map(), changes: ()
           title: declared.title ?? declared.command,
           hint: declared.hint ?? declared.command,
           command: declared.command,
+          row: MESSAGE, // a tool speaks in sentences, and they go underneath
         }
       const built = BUILT_IN[declared.use]
       if (!built) return null // a name we do not have is a typo, not a crash
@@ -73,6 +84,7 @@ export const catalogue = (project, git = { commits: () => new Map(), changes: ()
         id: declared.id,
         title: declared.title ?? say(built.title, declared.params),
         hint: declared.hint ?? say(built.hint, declared.params),
+        row: built.row,
         // git knows about files revu will not open — a lockfile, a binary, a
         // path just deleted. A row that opens nothing is worse than no row.
         items: built.items(project, declared.params, git).filter((i) => project.corpus.has(i.path)),
@@ -90,6 +102,7 @@ export const folderScope = (files, prefix) => ({
   id: FOLDER + prefix,
   title: `In ${prefix}/`,
   hint: 'everything under this folder',
+  row: LENGTH,
   within: prefix, // the rows drop it from their folder column: it is the title
   items: files.filter((f) => f.path.startsWith(prefix + '/')).map((f) => ({ path: f.path, label: '' })),
 })

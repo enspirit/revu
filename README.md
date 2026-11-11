@@ -52,18 +52,27 @@ Two consequences worth knowing: it is **not** in git, so exporting is how a
 review leaves your machine; and if you move or rename the project, the hash
 changes and you start a fresh review — the old file stays where it was.
 
+## Install
+
+```bash
+npm install -g @enspirit/revu
+```
+
+That is the way to use it: one global install, then `revu` wherever you are.
+(`pnpm add -g @enspirit/revu` and `yarn global add @enspirit/revu` work too, and
+`npx @enspirit/revu .` runs it once without installing anything.)
+
 ## Use
 
 ```bash
-npm install -g revu            # or: pnpm add -g revu
-
-revu ~/code/some-project       # read and annotate it, in the browser
+revu ~/code/some-project         # read and annotate it, in the browser
 revu export ~/code/some-project  # the review so far, as markdown, on stdout
 revu scopes ~/code/some-project  # every scope — the places to look — as markdown
 revu init ~/code/some-project    # write .revu.yml — the only file revu ever writes
 ```
 
-`--port N` moves the server (default 7777), `--no-open` keeps the browser shut.
+With no path, revu reads the directory you are standing in. `--port N` moves the
+server (default 7777), `--no-open` keeps the browser shut.
 
 ## The three panes
 

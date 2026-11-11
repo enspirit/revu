@@ -1,5 +1,7 @@
 // One page, no framework. The whole client is: fetch a snapshot, draw three
 // panes, and post a remark. State is small enough to redraw whole panes.
+import { baseOf, commonLabel, dirOf, tailOf } from './format.js'
+
 const $ = (sel) => document.querySelector(sel)
 const make = (tag, props = {}, kids = []) => {
   const node = Object.assign(document.createElement(tag), props)
@@ -40,8 +42,6 @@ const state = {
   stack: [], // the scopes we came through, oldest first — Esc walks back out
 }
 
-const dirOf = (path) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/') + 1) : '')
-const baseOf = (path) => path.slice(path.lastIndexOf('/') + 1)
 const addressOf = (n) =>
   n.from == null ? 'whole file' : n.from === n.to ? `L${n.from}` : `L${n.from}-${n.to}`
 
@@ -53,31 +53,45 @@ const remarkCounts = () => {
   return counts
 }
 
-// One row shape everywhere: what the file is called, where it lives, how much
-// of it there is, and what this scope has to say about it. A word or two sits
-// on the same line; a grep match takes its own, because a row you cannot
-// identify is a row you cannot use.
-const INLINE_LABEL = 24
+// Three things, in one order, always: what the file is called, where it lives,
+// and the one number this scope is about. A sentence from a tool is not a
+// column — it goes underneath, where it has the width to be read.
+const LENGTH = { metric: 'size' }
 
-const itemRow = (item, counts) => {
-  const at = item.line ? `${item.path}:${item.line}` : item.path
-  const long = (item.label ?? '').length > INLINE_LABEL
+const itemRow = (item, counts, spec = LENGTH, mute = null) => {
+  const label = item.label ?? ''
+  const metric =
+    spec.metric === 'size'
+      ? item.size == null
+        ? ''
+        : String(item.size)
+      : spec.metric === 'label' && label !== mute
+        ? label
+        : ''
+  const detail = spec.detail === 'label' ? label : ''
+
   // Inside a folder scope the folder is the title; repeating it on every row
   // would push out the part that differs.
   const within = state.scope?.within
   const folder = dirOf(item.path)
   const top = make('div', { className: 'top' }, [
     make('span', { className: 'base', textContent: baseOf(item.path) + (item.line ? ':' + item.line : '') }),
-    make('span', { className: 'where', textContent: within ? folder.slice(within.length + 1) : folder }),
+    make('span', { className: 'where', textContent: tailOf(within ? folder.slice(within.length + 1) : folder) }),
   ])
   const n = counts.get(item.path)
   if (n) top.append(make('span', { className: 'n', textContent: `●${n}` }))
-  if (item.label && !long) top.append(make('span', { className: 'said', textContent: item.label }))
-  if (item.size != null)
-    top.append(make('span', { className: 'size', title: `${item.size} lines`, textContent: item.size }))
+  if (metric)
+    top.append(
+      make('span', {
+        className: 'metric',
+        title: spec.metric === 'size' ? `${metric} lines` : metric,
+        textContent: metric,
+      }),
+    )
 
-  const row = make('a', { className: 'file', title: `${at}${item.label ? ' — ' + item.label : ''}` }, [top])
-  if (long) row.append(make('div', { className: 'said line-two', textContent: item.label }))
+  const at = item.line ? `${item.path}:${item.line}` : item.path
+  const row = make('a', { className: 'file', title: `${at}${label ? ' — ' + label : ''}` }, [top])
+  if (detail) row.append(make('div', { className: 'detail', textContent: detail }))
   if (state.file?.path === item.path) row.classList.add('on')
   row.onclick = () => openFile(item.path, item.line)
   return row
@@ -105,19 +119,26 @@ const drawList = () => {
     const whence = state.stack.at(-1)?.title ?? 'scopes'
     const back = make('div', { className: 'back', textContent: `‹ ${whence}` })
     back.onclick = leaveScope
+    // A label most rows repeat is said once, up here, and the rows that differ
+    // keep theirs — so what stands out is what is unlike the others.
+    const { label: common, all } = commonLabel(state.scope.items)
     list.append(
       back,
       make('div', { className: 'section' }, [
         make('span', { textContent: state.scope.title }),
         make('span', { className: 'count', textContent: state.scope.items.length }),
       ]),
-      make('div', { className: 'hint scope-hint', textContent: state.scope.hint }),
+      make('div', {
+        className: 'hint scope-hint',
+        textContent: common ? `${state.scope.hint} · ${all ? 'all' : 'mostly'} ${common}` : state.scope.hint,
+      }),
     )
     if (state.scope.error)
       list.append(make('p', { className: 'hint', textContent: state.scope.error }))
     if (!state.scope.items.length)
       list.append(make('p', { className: 'hint', textContent: 'Nothing here. That is an answer too.' }))
-    for (const item of state.scope.items) list.append(itemRow(item, counts))
+    for (const item of state.scope.items)
+      list.append(itemRow(item, counts, state.scope.row ?? LENGTH, common))
     return
   }
 

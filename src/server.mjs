@@ -15,6 +15,7 @@ import { catalogue, FOLDER, folderScope, headers, sized } from './scopes.mjs'
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..', 'web')
 const TYPES = { html: 'text/html', js: 'text/javascript', css: 'text/css' }
+const ASSETS = new Set(['app.js', 'app.css', 'format.js'])
 const MAX_QUOTE_LINES = 40
 
 marked.setOptions({ gfm: true, breaks: false })
@@ -107,7 +108,8 @@ export const serve = ({ root, port, host = '127.0.0.1' }) => {
     const p = url.pathname
     try {
       if (p === '/' || p === '/index.html') return send(res, 200, TYPES.html, readFileSync(join(WEB, 'index.html')))
-      if (p === '/app.js' || p === '/app.css')
+      // Our own files, by name: a path from the request never reaches the disk.
+      if (ASSETS.has(p.slice(1)))
         return send(res, 200, TYPES[p.split('.').pop()], readFileSync(join(WEB, p.slice(1))))
 
       if (p === '/api/map') {

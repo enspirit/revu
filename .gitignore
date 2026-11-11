@@ -1,2 +1,8 @@
 node_modules/
 *.log
+
+# macOS
+.DS_Store
+
+# screenshots dropped in the repo root while reviewing
+/Screenshot*.png

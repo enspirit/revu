@@ -212,11 +212,9 @@ textarea {
   border-bottom: 1px solid var(--line);
   margin-bottom: 0.3rem;
 }
-/* One row, four columns: what it is called, where it lives, what this scope
-   has to say about it, how long it is. Only the folder may be clipped. */
-/* A block, not a flex row: inside a wrapping flex, a column that no longer
-   fits moves to the next line instead of giving up width, and the length ends
-   up under the name. The first line is its own flex row. */
+/* One row, three parts in one hierarchy: the name is the subject, the folder
+   is context, and the metric is whatever this scope measures — at most one of
+   them. A fourth column is what made this panel unreadable. */
 a.file {
   display: block;
   padding: 0.12rem 0.8rem;
@@ -229,13 +227,6 @@ a.file .top {
   display: flex;
   gap: 0.45rem;
   align-items: baseline;
-}
-/* What a grep or a linter said, under the place it said it about, with the
-   whole width to itself. */
-a.file .said.line-two {
-  max-width: 100%;
-  padding: 0 0 0.15rem 0.6rem;
-  font-size: 0.68rem;
 }
 a.file:hover {
   background: var(--mark);
@@ -254,34 +245,34 @@ a.file .base {
   white-space: nowrap;
 }
 a.file .where,
-a.file .said,
-a.file .size {
+a.file .metric,
+a.file .detail {
   color: var(--dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Shrinking is proportional to content width, so the longest column — usually
-   what the tool said — gives up the most, and the filename stays legible. */
+/* The folder is context: smaller, dimmer, and the first to give up width. */
 a.file .where {
   flex: 0 2 auto;
   min-width: 0;
-  max-width: 45%;
+  max-width: 55%;
   font-size: 0.66rem;
 }
-a.file .said {
-  flex: 0 2 auto;
-  min-width: 0;
-  max-width: 50%;
-  font-size: 0.7rem;
-}
-/* The length of the file, on every row that names one, always at the edge. */
-a.file .size {
+/* The one number this scope is about, at the edge, in its own column. */
+a.file .metric {
   flex: 0 0 auto;
   margin-left: auto;
   padding-left: 0.4rem;
   font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
+}
+/* What a tool said about this place: a sentence, so it gets a line. */
+a.file .detail {
+  display: block;
+  max-width: 100%;
+  padding: 0 0 0.15rem 0.6rem;
+  font-size: 0.68rem;
 }
 a.file .n {
   flex: 0 0 auto;
