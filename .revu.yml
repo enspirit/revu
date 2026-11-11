@@ -1,0 +1,51 @@
+# revu, read by revu. This file is the worked example the README points at:
+# every key it supports, on numbers chosen for a two-thousand-line tool rather
+# than for a codebase.
+title: revu
+
+# What to read to understand this, in order. A reading order may name sources,
+# not only prose — here it is the shortest path through the design: what a
+# scope is, how it reaches the disk, how a remark comes back as markdown.
+reading:
+  - README.md
+  - src/scopes.mjs
+  - src/server.mjs
+  - src/export.mjs
+  - web/app.js
+
+exclude: []
+
+scopes:
+  - use: reading
+  - use: changed
+  - use: churn
+    days: 7 # this repository is days old; thirty would be all of it
+    top: 15
+  - use: largest
+    min: 100 # a hundred lines is a long file here, not a shrug
+    top: 10
+  - use: untested
+    min: 40 # and so is forty untested ones
+    top: 10
+  - use: documents
+  - use: links
+  - use: orphans
+  - use: todo
+    top: 20
+  - use: all
+
+  # No decision records yet, so neither of these is offered. The shape, for
+  # when there are: they read whatever `decisions:` points at, or the
+  # doc/decisions and docs/adr conventions.
+  #  - use: decisions
+  #  - use: uncited
+
+  # Two of our own. Both are plain git, so they run anywhere this repository
+  # does, and each runs only when entered.
+  - title: The public surface
+    hint: every export under src/ — the contract between these files
+    run: git grep -n -E '^export (const|function|class)' -- src
+
+  - title: Where the I/O is
+    hint: it belongs at the edges; this is where the edges actually are
+    run: git grep -n -E 'readFileSync|writeFileSync|execFileSync|execFile\(|createServer|fetch\(' -- src

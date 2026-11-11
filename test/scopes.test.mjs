@@ -135,3 +135,13 @@ test('a folder is a scope reached by its name, holding everything under it', () 
     'a sibling whose name merely starts the same is not inside it',
   )
 })
+
+test('a scope never offers a row that would open nothing', () => {
+  const asked = project(FILES, { scopes: [{ use: 'churn' }, { use: 'changed' }] })
+  const lockfile = { commits: () => new Map([['pnpm-lock.yaml', 9]]), changes: () => [{ path: 'gone.ts', label: 'deleted' }] }
+  assert.deepEqual(
+    catalogue(asked, lockfile).map((s) => s.items),
+    [[], []],
+    'git knows files revu will not open',
+  )
+})

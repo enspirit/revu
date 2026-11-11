@@ -29,7 +29,7 @@ const BUILT_IN = {
   changed: {
     title: (par) => (par.against ? `Changed against ${par.against}` : 'Changed, not committed'),
     hint: (par) => (par.against ? 'this branch, as a whole' : 'the working tree against HEAD'),
-    items: (p, par, git) => git.changes(par.against).filter((c) => p.corpus.has(c.path)),
+    items: (p, par, git) => git.changes(par.against),
   },
   decisions: { title: 'Decisions', hint: 'the record, in order', items: (p) => of(p.corpus, 'decision') },
   documents: { title: 'Documents', hint: 'the prose', items: (p) => of(p.corpus, 'doc') },
@@ -73,7 +73,9 @@ export const catalogue = (project, git = { commits: () => new Map(), changes: ()
         id: declared.id,
         title: declared.title ?? say(built.title, declared.params),
         hint: declared.hint ?? say(built.hint, declared.params),
-        items: built.items(project, declared.params, git),
+        // git knows about files revu will not open — a lockfile, a binary, a
+        // path just deleted. A row that opens nothing is worse than no row.
+        items: built.items(project, declared.params, git).filter((i) => project.corpus.has(i.path)),
       }
     })
     .filter(Boolean)
