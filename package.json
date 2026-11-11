@@ -1,6 +1,6 @@
 {
   "name": "@enspirit/revu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Read a project an AI wrote, annotate it, hand back one markdown review.",
   "keywords": [
     "code-review",
