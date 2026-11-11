@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>revu</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <aside id="map">
+      <header>
+        <h1 id="title">…</h1>
+        <button id="refresh" title="re-read the project from disk">re-read</button>
+        <p id="counts" class="dim"></p>
+        <input id="search" type="search" placeholder="find a file  ( / )" />
+      </header>
+      <nav id="list"></nav>
+    </aside>
+
+    <main id="pane">
+      <header>
+        <span id="path" class="path">Pick a file on the left.</span>
+        <span class="spacer"></span>
+        <button id="comment">comment <kbd>c</kbd></button>
+        <button id="toggle" hidden>source <kbd>r</kbd></button>
+        <button id="wide" title="hide the map and read wide">wide <kbd>w</kbd></button>
+      </header>
+      <div id="content" class="empty">
+        <p>
+          revu never writes to the project it reads. Click a line number in a source view — or
+          select text in a rendered document — then press <kbd>c</kbd> to say something about it.
+          <kbd>shift</kbd>-click a second line number to take a range.
+        </p>
+      </div>
+    </main>
+
+    <aside id="review">
+      <header>
+        <h2>Review</h2>
+        <span class="spacer"></span>
+        <button id="overall" title="a remark about the whole project">overall…</button>
+        <button id="export" class="primary">export <kbd>e</kbd></button>
+        <p id="tally" class="dim"></p>
+      </header>
+      <div id="composer" hidden></div>
+      <div id="remarks"></div>
+      <footer id="store" class="dim"></footer>
+    </aside>
+
+    <dialog id="sheet">
+      <header>
+        <strong>One markdown text, for whoever writes the next change</strong>
+        <span class="spacer"></span>
+        <button id="copy">copy</button>
+        <button id="download">download</button>
+        <button id="close">close</button>
+      </header>
+      <textarea id="markdown" readonly spellcheck="false"></textarea>
+    </dialog>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

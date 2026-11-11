@@ -1,0 +1,17 @@
+{
+  "name": "revu",
+  "version": "0.1.0",
+  "description": "Read a project an AI wrote, annotate it, hand back one markdown review.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "revu": "src/cli.mjs" },
+  "files": ["src", "web", "README.md"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "marked": "^15.0.7",
+    "yaml": "^2.7.0"
+  }
+}
