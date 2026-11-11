@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // revu — read a project an AI wrote, annotate it, hand back one markdown review.
 import { execFile } from 'node:child_process'
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { CONFIG_NAME, template } from './config.mjs'
 import { render } from './export.mjs'
@@ -9,6 +9,9 @@ import * as notes from './notes.mjs'
 import { gitFacts, openProject } from './project.mjs'
 import { catalogue, sized } from './scopes.mjs'
 import { serve } from './server.mjs'
+import { welcome } from './welcome.mjs'
+
+const { version: VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 const USAGE = `revu — read a project, annotate it, hand back one markdown review.
 
@@ -93,6 +96,11 @@ if (flag('--help') || flag('-h')) {
   const port = Number(value('--port', 7777))
   const project = openProject(root)
   const { doc, decision, code } = project.counts
+  // Once per machine, before anything else: the store does not exist until a
+  // first remark is saved, which makes it an honest "have we met?".
+  if (!existsSync(notes.storeDir()))
+    process.stdout.write(welcome(VERSION, notes.storeDir(), process.stdout.isTTY))
+
   await serve({ root, port })
   const url = `http://127.0.0.1:${port}`
   process.stdout.write(

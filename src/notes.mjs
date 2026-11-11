@@ -7,12 +7,15 @@ import { basename, join } from 'node:path'
 
 export const TAGS = ['must-fix', 'question', 'scope', 'idea', 'praise', 'note']
 
+// Said in one place because three of them tell the reader about it: the
+// startup line, the review pane, and the message npm prints on install.
+export const storeDir = () =>
+  process.env.REVU_HOME ??
+  join(process.env.XDG_STATE_HOME ?? join(homedir(), '.local', 'state'), 'revu')
+
 export const storePath = (root) => {
-  const base =
-    process.env.REVU_HOME ??
-    join(process.env.XDG_STATE_HOME ?? join(homedir(), '.local', 'state'), 'revu')
   const id = createHash('sha1').update(root).digest('hex').slice(0, 8)
-  return join(base, `${basename(root).replace(/[^\w.-]/g, '_')}-${id}.json`)
+  return join(storeDir(), `${basename(root).replace(/[^\w.-]/g, '_')}-${id}.json`)
 }
 
 export const open = (root) => {

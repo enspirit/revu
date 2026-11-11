@@ -18,6 +18,12 @@
     <meta property="og:url" content="https://revu.enspirit.be/" />
     <meta property="og:image" content="https://revu.enspirit.be/revu-dark.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Before the first paint, or the page flashes one theme and corrects
+      // itself in front of you. Nothing stored means: follow the system.
+      const chosen = localStorage.getItem('revu.page.theme')
+      if (chosen && chosen !== 'auto') document.documentElement.dataset.theme = chosen
+    </script>
     <style>
       /* The page wears the tool's own clothes: one palette stating both its
          values, so light and dark are never written twice. */
@@ -32,6 +38,13 @@
         --mark: light-dark(#fdf3cf, #3a3418);
         --prose: Charter, Palatino, Georgia, serif;
         --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      }
+      /* Without these, the system decides. With one, the reader has. */
+      :root[data-theme='light'] {
+        color-scheme: light;
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
       }
       * {
         box-sizing: border-box;
@@ -235,6 +248,13 @@
         border-color: var(--accent);
         color: var(--accent);
       }
+      button.icon-link {
+        font: inherit;
+        font-size: 1rem;
+        line-height: 1.15rem;
+        padding: 0.35rem 0.65rem;
+        cursor: pointer;
+      }
       .icon-link svg {
         width: 1.15rem;
         height: 1.15rem;
@@ -309,6 +329,7 @@
       <div class="bar-inner">
         <a class="mark" href="/">revu<span>.</span></a>
         <nav>
+          <button id="theme" class="icon-link" type="button" title="appearance: auto">◐</button>
           <a class="icon-link" href="https://github.com/enspirit/revu" rel="noopener">
             <!-- GitHub's own mark, used to link to GitHub. -->
             <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -347,10 +368,14 @@
 
     <main>
       <figure>
-        <a href="revu-dark.jpg">
+        <a id="shot-link" href="revu-dark.jpg">
+          <!-- Without scripting this still matches the reader's system; with
+               it, the switcher above keeps the screenshot and the page in the
+               same mood. -->
           <picture>
-            <source srcset="revu-dark.jpg" media="(prefers-color-scheme: dark)" />
+            <source id="shot-dark" srcset="revu-dark.jpg" media="(prefers-color-scheme: dark)" />
             <img
+              id="shot"
               src="revu-light.jpg"
               alt="Revu's three panes: scopes on the left, a source file with syntax colour in the middle, remarks anchored to lines on the right."
             />
@@ -595,5 +620,37 @@
       </p>
       <p>© 2026 Enspirit SRL · Revu is MIT licensed.</p>
     </footer>
+
+    <script>
+      // The same three states as the tool itself, and the same faces for them:
+      // following the system is the default, and overriding it is a choice this
+      // browser remembers.
+      const THEMES = ['auto', 'light', 'dark']
+      const FACE = { auto: '◐', light: '○', dark: '●' }
+      const KEY = 'revu.page.theme'
+      const button = document.getElementById('theme')
+      const shot = document.getElementById('shot')
+      const shotDark = document.getElementById('shot-dark')
+      const systemDark = matchMedia('(prefers-color-scheme: dark)')
+
+      const apply = (theme) => {
+        if (theme === 'auto') delete document.documentElement.dataset.theme
+        else document.documentElement.dataset.theme = theme
+        localStorage.setItem(KEY, theme)
+        button.textContent = FACE[theme]
+        button.title = `appearance: ${theme}`
+        // The screenshot follows the page, not the system: a dark panel on a
+        // light page reads as a mistake.
+        const dark = theme === 'dark' || (theme === 'auto' && systemDark.matches)
+        shotDark.media = dark ? 'all' : 'not all'
+        shot.src = dark ? 'revu-dark.jpg' : 'revu-light.jpg'
+      }
+
+      button.addEventListener('click', () =>
+        apply(THEMES[(THEMES.indexOf(localStorage.getItem(KEY) ?? 'auto') + 1) % THEMES.length]),
+      )
+      systemDark.addEventListener('change', () => apply(localStorage.getItem(KEY) ?? 'auto'))
+      apply(localStorage.getItem(KEY) ?? 'auto')
+    </script>
   </body>
 </html>
