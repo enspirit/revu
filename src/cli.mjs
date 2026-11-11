@@ -22,6 +22,7 @@ const USAGE = `revu — read a project, annotate it, hand back one markdown revi
 
   --port N                 default 7777      --no-open    do not open a browser
   --force                  overwrite ${CONFIG_NAME}
+  --skill                  print the agent instructions for writing ${CONFIG_NAME}
 
 Remarks are kept outside the project, under $XDG_STATE_HOME/revu.
 `
@@ -70,6 +71,9 @@ const asList = (scopes, corpus) =>
 
 if (flag('--help') || flag('-h')) {
   process.stdout.write(USAGE)
+} else if (flag('--skill')) {
+  // The instructions, not a copy of them: one file, read from where it ships.
+  process.stdout.write(readFileSync(new URL('../skills/revu-setup/SKILL.md', import.meta.url), 'utf8'))
 } else if (command === 'init') {
   const file = join(root, CONFIG_NAME)
   if (existsSync(file) && !flag('--force')) {

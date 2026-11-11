@@ -590,8 +590,27 @@
       <pre><code>scopes:
   - use: largest
     min: 400                      # your call, not ours
+  - title: Lint
+    run: npm run --silent lint -- --format=compact || true
   - title: Says deploy, not publish
     run: git grep -n -i deploy -- '*.md'</code></pre>
+
+      <p>
+        Output is read in the format every tool already speaks: <code>path:line: message</code>,
+        tsc's <code>path(line,col): message</code>, or a bare path. Lines naming a file the project
+        does not have are dropped, so banners and stack frames fall away on their own.
+      </p>
+
+      <h3>An agent can write that file</h3>
+      <p>
+        Which linter, which coverage report, which thresholds — that is a reading job, so hand it
+        over. <code>revu --skill</code> prints the instructions: find the harness rather than guess
+        it, prefer the project's own task names, <em>run every command before writing it down</em>,
+        take the numbers from this codebase's own distribution of file lengths, and report what was
+        skipped and why.
+      </p>
+      <pre><code><span class="prompt">$</span> mkdir -p .claude/skills/revu-setup
+<span class="prompt">$</span> revu --skill &gt; .claude/skills/revu-setup/SKILL.md</code></pre>
 
       <h3>Remarks that come back as requirements</h3>
       <p>

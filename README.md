@@ -141,6 +141,25 @@ that list on its default numbers.
 
 None of them claims a defect. They claim a place to look.
 
+### Let an agent write the config
+
+The scopes worth having are the ones wired to the harness a project already
+owns — its linter, its type checker, its coverage report — on thresholds taken
+from its own files. That is a reading job, so hand it to an agent:
+
+```bash
+mkdir -p .claude/skills/revu-setup
+revu --skill > .claude/skills/revu-setup/SKILL.md
+```
+
+Then ask it to *set revu up on this project*. The skill tells it to find the
+harness rather than guess it, to prefer the project's own task names, to **run
+every command before writing it down**, to pick `min:` from the actual
+distribution of file lengths, and to report what it skipped and why. It writes
+`.revu.yml`, plus a `.revu/` folder only if a tool's output needs converting.
+
+It works the same in any agent that reads a `SKILL.md`, or pasted into a prompt.
+
 ### Scopes of your own
 
 The interesting ones are the ones revu cannot guess. Anything that prints a
